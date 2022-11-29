@@ -1,0 +1,1505 @@
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass{article}
+\usepackage{mathtools}  % for paired delimiters 
+\usepackage{mathrsfs}   % for script capitals
+\usepackage{bbm}
+\usepackage{enumerate}
+\usepackage{amssymb}
+\usepackage[ruled,linesnumbered]{algorithm2e}
+\usepackage{geometry}
+\geometry{a4paper,scale=0.8}\numberwithin{equation}{section}
+\input{structure.tex} % Include the file specifying the document structure and custom commands
+
+%----------------------------------------------------------------------------------------
+%	ASSIGNMENT INFORMATION
+%----------------------------------------------------------------------------------------
+
+\title{Numerical Methods for Option Pricing} % Title of the assignment
+
+\author{Yang Bai\\ \texttt{baaiy0610@outlook.com}\\Yugeng Zhou\\\texttt{yugengzhou@gmail.com}} % Author name and email address
+
+\date{Technical University of Berlin--- \today} % University, school and/or department name(s) and a date
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\maketitle % Print the title
+
+%----------------------------------------------------------------------------------------
+%	INTRODUCTION
+%----------------------------------------------------------------------------------------
+
+\section*{Introduction} % Unnumbered section
+This paper mainly introduces some basic numerical methods for Option Pricing and compares their advantages and disadvantages. We mainly introduce four methods: The binomial method, Monte-Carlo methods(Euler-Maruyama, Stochastic Runge-Kutta), and some Numerical methods for PDEs(FDM, FEM, FVM). 
+In the first part, I would like to briefly introduce the definition of the options and some common kinds of options(European option/American option/ Asia options)
+
+%----------------------------------------------------------------------------------------
+%	PROBLEM 1
+%----------------------------------------------------------------------------------------
+
+\section{Options}
+In finance, an option is a contract that conveys its owner, the holder, the right, but not the obligation, to buy or sell an underlying asset or instrument at a specified strike price prior to or on a specified date, depending on the form of the option.
+\subsection{European call options}
+\textbf{Definition} (European Call option):\\
+\textit{A European Call option is a contract that gives its holder the right(but not the obligation) to buy one unit of a risky asset at a predefined price K (strike) and a prespecified date T (maturity).}\\~\\
+Obviously, at maturity T the holder can choose how to acquire the underlying asset. For a rational investor, he will check the current price $S_{T}$ and exercise the call option if and only if $S_{T}>K$. Because he can immediately sell the asset for the price $S_{T}$ and makes a gain of $S_{T}-K$ per share. However, in case $S_{T}<K$, the holder will not exercise since he can acquire the underlying assert on the market for the lower price $S_{T}$, the option is thus worthless. Of course, if $S_{T}=K$, it makes no difference whether to exercise or not. In summary, we denote the value of a call option at time t with $V(S_{t},t)$. Therefore, its payoff function at maturity T is given by:
+
+\begin{center}
+	$\begin{cases}0&in\  case\  S_{T}\leqslant K\  \left( option\  expires\  worthless\right),  \\ S_{T}-K&in\  case\  S_{T}>K\  \left( option\  is\  exercised\right),  \end{cases}$
+\end{center}
+namely
+\begin{center}
+	$V\left( S_{T},\  T\right)  =max\left\{ S_{T}-K,0\right\}  =\left( S_{T}-K\right)^{+}.$
+\end{center}
+
+
+\subsection{European Put option}
+\textbf{Definition}(European Put option):\\
+\textit{A European Put option is a contract that gives its holder the right(but not the obligation) to sell one unit of a risky asset at a predefined price K(strike) and a prespecified date T(maturity).}
+Obviously, for a European put option, exercise only makes sense in case $S_{T}<K$. The payoff function is thus given by:
+
+\begin{center}
+	$\begin{cases}0&in\  case\  S_{T}\geqslant K\  \left( option\  expires\  worthless\right),  \\ K-S_{T}&in\  case\  S_{T}<K\  \left( option\  is\  exercised\right),  \end{cases} $
+\end{center}
+namely
+\begin{center}
+	$V\left( S_{T},\  T\right)  =max\left\{ K-S_{T},0\right\}  =\left( K-S_{T}\right)^{+}. $
+\end{center}
+
+\subsection{American Call and Put Options}
+As explained above, exercise is only permitted at maturity T for European options. Now we introduce another option that can be exercised at any time up to and including the maturity T, called American options. Therefore, for any $t\leqslant T$, the payoff functions for an American call and put options are $(S_{t}-K)^{+}$ and $(K-S_{t})^{+}$, respectively.
+
+
+
+\section{The Binomial Model}
+Determine the value of options in a time-continuous model achieved by following steps:
+\begin{itemize}
+	\item One period model,
+	\item Extension of one period model to a discrete model,
+	\item The discrete model converges to a time continuous model.
+	\end{itemize}
+
+\subsection{The one-period model}
+Let us assume that the price S can only have two possible outcomes:
+with $u>1$ and $0<d<1$.\\
+Remark: The condition:
+\begin{center}
+	$d<exp\left( rT\right)  <u,$
+\end{center}
+has to be satisfied to rule out arbitrage.\\~\\
+\textbf{Replication} 
+Idea: we construct a portfolio at time 0, which replicates precisely the option's terminal payoff at maturity T. We consider the portfolio M:
+\begin{itemize}
+	\item a: The amount of money deposited in a bank account or borrowed from a bank,
+	\item b: The number of stocks hold at time 0.
+\end{itemize}
+
+M's value at time 0 is worth:
+\begin{center}
+	$M_{0}=a+bS_{0},$
+\end{center}
+
+which should replicate the option Value at T, namely
+\begin{center}
+	$\begin{cases}M^{u}_{T}=a\  exp\left( rT\right)  +bS_{0}u=V^{u}_{T}&\\ M^{d}_{T}=a\  exp\left( rT\right)  +bS_{0}d=V^{d}_{T}&\end{cases} $
+\end{center}
+
+\subsection{The n-period model}
+Now we generalize the one period model to n period model:
+\\
+where $p$ is the probability of an up movement in the asset price, and $1-p$ is thus the probability of a downward movement.
+
+\subsection{The Binomial procedure}
+We introduce some notations:
+\begin{itemize}
+	\item $N$: the number of time steps between 0 and T.
+	\item $\Delta t$: the length of a single step.
+	\item $t_{i}=i\Delta t$: time for i-th step.
+	\item $S_{i}$: stock price at step i.
+\end{itemize}
+We assume that there are no transaction costs and no dividend.
+\\~\\
+To finish the binomial procedure we firstly need to determine the values of $p=p^{*}$, $u$ and $d$. We startwith the assumption that the log return of the stock price $log\left( \frac{S_{i+1}}{S_{i}} \right)$ follows the normal distribution $N\left( r\Delta t-\frac{\sigma^{2} }{2} \Delta t,\  \sigma^{2} \Delta t\right)$, we have thus
+\begin{center}
+	$\begin{gathered}E\left[ S_{i+1}\right]  =S_{i}exp\left( r\Delta t\right)  \\ Var\left[ S_{i+1}\right]  =S^{2}_{i}exp\left( 2r\Delta t\right)  \left( e^{\sigma^{2} \Delta t}-1\right)  \end{gathered}$
+\end{center}
+We calculate then
+\begin{center}
+	$S_{i}exp\left( r\Delta t\right)  =puS_{i}+\left( 1-p\right)  dS_{i}\Longrightarrow exp\left( r\Delta t\right)  =pu+\left( 1-p\right)  d$
+\end{center}~\\
+and
+~\\
+
+$\begin{gathered}S^{2}_{i}exp\left( 2r\Delta t\right)  \left( exp\left( \sigma^{2} \Delta t\right)  -1\right)  =p\left( uS_{i}\right)^{2}  +\left( 1-p\right)  \left( dS_{i}\right)^{2}  -\left( puS_{i}+\left( 1-p\right)  dS_{i}\right)^{2}  \\ \Longrightarrow exp\left( 2r\Delta t\right)  \left( exp\left( \sigma^{2} \Delta t\right)  -1\right)  =pu^{2}+\left( 1-p\right)  d^{2}-\left( pu+\left( 1-p\right)  d\right)^{2}  \end{gathered} $
+\\~\\
+Besides, due to $S_{i+1}=udS_{i}=duS_{i}$ it holds that
+\begin{center}
+	$u\cdot d=1$
+\end{center}
+
+Finally, we could obtain
+\begin{center}
+	$u=e^{\sigma \sqrt{t}} ,\  d=\frac{1}{u}=e^{-\sigma \sqrt{t}} ,\  p=\frac{e^{r\Delta t}-d}{u-d}, q = 1 - p $
+\end{center}
+
+\subsection{Binomial algorithm for European and American options}
+Notations:
+\begin{itemize}
+	\item $S_0$: stock price at $t=0$(price today)
+	\item $S_{ij}=u^{j}d^{i-j}S_{0}$: possible price at $t=t_i, i=0,..., N; j=0,...,i$
+	\item $V^{A}_{t}$: the value of American option at t
+	\item $V^{E}_{t}$: the value of European option at t
+\end{itemize}
+
+
+
+\begin{enumerate}[1.]
+	\item Initialization of Binomial tree\begin{center}
+		$\begin{gathered}European\  option:\  S_{jN}=u^{j}d^{N-j}S_{0},\  j=0,...,i\\ American\  option:\  S_{ji}=u^{j}d^{N-j}S_{0},\  \forall i,j\end{gathered} $
+	\end{center}
+	\item Computation of the payoff\begin{center}
+		$V_{jN}=\begin{cases}\left( S_{jN}-K\right)^{+}  &for\  Call\\ \left( K-S_{jN}\right)^{+}  &for\  Put\end{cases} $
+	\end{center}
+	\item Backward (value) iteration\begin{algorithm}
+\caption{European options}\label{algorithm}
+\For{$i=N-1,...,0$}{\For{$j=0,...,i$}{$V_{j,i}=e^{-r\Delta t}\left( pV_{j+1,i+1}+\left( 1-p\right)  V_{j,i+1}\right)  $}}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{American options}\label{algorithm}
+\For{$i=N-1,...,0$}{\For{$j=0,...,i$}{$\hat{V}_{j,i} =e^{-r\Delta t}\left( pV_{j+1,i+1}+\left( 1-p\right)  V_{j,i+1}\right)  $\;$V_{j,i}=\begin{cases}max\left\{ \left( S_{ji}-K\right)^{+}  ,\hat{V}_{j,i} \right\}  &for\  American\  Call\\ max\left\{ \left( K-S_{ji}\right)^{+}  ,\hat{V}_{j,i} \right\}  &for\  American\  Put\end{cases} $}}
+\end{algorithm}\end{enumerate}
+Finally, $V_{0,0}$ is the approximation of the Option price.
+
+\newpage
+%------------------------------------------------
+\section{Stochastic Differential Equations} % Numbered section
+
+In order to introduce the backward stochastic differential equation(BSDE), i will briefly introduce the stochastic differential equation(SDE) in the first part, which mainly includes Brownian motion, Martingale approach, Stochastic integrals and It\^{o} rules.
+\subsection{Brownian motion}
+
+\textbf{Definition} (Brownian motion): \\
+$A\  Brownian\  motion\  is\  a\  continuous-time\  stochastic\  process\  W_{t},\  t\geqslant 0\  with\  the\  following\  properties: $ 
+% Numbered question, with subquestions in an enumerate environment
+
+	% Subquestions numbered with letters
+	\begin{enumerate}[(1).]
+		\item $W{}_{0}=0$
+		\item $t\longrightarrow W_{t}\  is\  continuous\  in\  t\  \left( almost\  surely\right)  $
+		\item $W_{t}\  has\  an\  stationary,\  independent\  increments$
+		\item $The\  increment\  follows\  the\  normal\  distribution:$\begin{center}
+			$W_{t}-W_{s}\sim N\left( 0,\  t-s\right)  ,\  0\leqslant s<t$
+		\end{center}
+		
+	\end{enumerate}
+\textbf{Definition} (Geometric brownian motion)\\
+\textit{A geometric Brownian motion (GBM) (also known as exponential Brownian motion) is a continuous-time stochastic process in which the logarithm of the randomly varying quantity follows a Brownian motion (also called a Wiener process) with drift.}\\
+A stochastic process St is said to follow a GBM if it satisfies the following stochastic differential equation (SDE):
+\begin{center}
+${\displaystyle dS_{t}=\mu S_{t}\,dt+\sigma S_{t}\,dW_{t}}dS_{t}=\mu S_{t}\,dt+\sigma S_{t}\,dW_{t}$
+\end{center}
+Where $W_{t}$ is a Wiener process or Brownian motion, and $\mu$ ('the percentage drift') and $\sigma$  ('the percentage volatility') are constants.\\
+~\\
+And let $S_{t}$ be a GBM, it holds that,
+\begin{enumerate}[(1).]
+	\item $E\left[ S_{t}\right]  =S_{0}exp\left( \mu t\right)  $
+	\item $Var\left( S_{t}\right)  =S^{2}_{0}exp\left( 2\mu t\right)  \left( e^{\sigma^{2} t}-1\right)  $
+\end{enumerate}
+%------------------------------------------------
+
+\subsection{The martingale approach}
+
+\textbf{Definition} (Martingale approach): \\
+\textit{An integrabele stochastic process  $(X_{t})_{t\in \mathbb{R}^{+}}$ is a martingale (respectively a supermartingale, respectively a submartingale) with respect to a filtration $(\mathscr{F}_{t})_{t\in \mathbb{R}^{+}}$ if it satisfies the property:}
+
+\begin{center}
+	$X_{s}=E\left[ X_{t}|\  \mathscr{F}_{s} \right]  ,\  0\leqslant s\leqslant t;$
+\end{center}
+\textit{respectively}
+\begin{center}
+	$X_{s}\geqslant E\left[ X_{t}|\  \mathscr{F}_{s} \right]  ,\  0\leqslant s\leqslant t;$
+\end{center}
+\textit{respectively}
+\begin{center}
+	$X_{s}\leqslant E\left[ X_{t}|\  \mathscr{F}_{s} \right]  ,\  0\leqslant s\leqslant t;$
+\end{center}
+\textit{then we have the proposition:}
+\begin{center}
+	$\begin{array}{l}E\left[ X_{t}\right]  =E\left[ X_{s}\right]  ,\  0\leqslant s\leqslant t\  \  \  (let\  X_{t}\  be\  a\  martingale)\\ E\left[ X_{t}\right]  \leq E\left[ X_{s}\right]  ,\  0\leqslant s\leqslant t\  \  \  (let\  X_{t}\  be\  a\  supermartingale)\\ E\left[ X_{t}\right]  \geqslant E\left[ X_{s}\right]  ,\  0\leqslant s\leqslant t\  \  \  (let\  X_{t}\  be\  a\  submartingale)\end{array}$
+\end{center}
+
+\subsection{Stochastic integrals and calculus}
+A general SDE with differential notation reads:
+\begin{center}
+	$dX_{t}=\underbrace{a\left( t,\  X_{t}\right)  dt}_{drift} \  +\underbrace{b\left( t,\  X_{t}\right)  dW_{t}}_{diffusion} $
+\end{center}
+Which can also be written in integral form as:
+\begin{center}
+	$X_{t}=\underbrace{X_{0}}_{known} +\int^{t}_{0} a\left( t,\  X_{t}\right)  dt\  +\  \int^{t}_{0} b\left( t,\  X_{t}\right)  dW_{t}$
+\end{center}
+The first integral part is the ordinary integral. Since $t\longmapsto W_{t}$ is of infinite variantion almost surely, $\int^{t}_{0} b\left( t,\  X_{t}\right)  dW_{t}$ can thus not be considered as an ordinary integral!
+\\
+
+\noindent
+Stochastic integral with respect to Brownian motion
+Assumption: [0, \textit{T}] decomposed into subintervals
+\begin{center}
+	$0=t_{0}<t_{1}<\ldots <t_{N}=T,\  \xi_{i} \in [t_{i-1},\  t_{i}),\  i=1,\  \ldots ,\  N$
+\end{center}
+Suppose that $b\left( t,\  X_{t}\right) $ is a constant function:
+\begin{center}
+	$\int^{T}_{0} bdW_{t}=\sum^{N}_{i=1} b\left( W_{t_{i}}-W_{t_{i-1}}\right)  =b\sum^{N}_{i=1} \left( W_{t_{i}}-W_{t_{i-1}}\right)  =b\left( W_{T}-W_{0}\right)  =bW_{T}$
+\end{center}
+Suppose that $b\left( t,\  X_{t}\right) $ is a simple step-function:
+\begin{center}
+	$b\left( t\right)  =\sum^{N}_{i=1} f\left( \xi_{i} \right)  \mathbbm{1}_{[t_{i-1},t_{i})}\left( t\right)  ,\  t\in \mathbb{R}^{+}$
+\end{center}
+i.e. the function $b\left( t\right)  $ takes the value 
+$f\left( \xi_{i} \right) $ on the interval $[t_{i-1},\  t_{i})$\\
+
+\noindent
+\textbf{Definition} ($L^{p}$ spaces)\\
+\textit{If $\left( \Omega ,\mathscr{F},\mathbb{P}\right) $ is a given ($\sigma$-finite)\,probability space,\, $L^{p}\left( \Omega ,\mathscr{F},\mathbb{P}\right)  $ is defined for $1\leqslant p\leqslant \infty $ by}
+\begin{center}
+	$L^{p}\left( \Omega ,\mathscr{F},\mathbb{P}\right)  \colon =\{ f:\Omega \longrightarrow \left\{ \mathbb{R},\  \mathbb{C}\right\}  ,\  f\  measurable\  and\  \int_{\Omega } \left| f\left( x\right)  \right|^{p}  dP\  <\infty \} $
+\end{center}
+With the $L^{p}$ seminorm
+\begin{center}
+	$\| \cdot \|_{L^{p}} \colon =\left( \int_{\Omega } |f\left( x\right)  |^{p}dP\right)^{\frac{1}{p} }  $
+\end{center}
+
+\noindent
+\textbf{Remark}: \textit{The set of simple step functions $b\left( t\right)  $ of the form above is a linear space which is dense in $L^{2}\left( \mathbb{R}^{+} \right)  $} for the norm
+\begin{center}
+	$\parallel b\left( t\right)  \parallel_{L^{2}} =\sqrt{\int^{\infty }_{0} \mid b\left( t\right)  \mid^{2} dt} <\infty ,\  b\left( t\right)  \in L^{2}\left( \mathbb{R}^{+} \right)  $
+\end{center}
+
+\noindent
+Classical integral of $b\left( t\right)$:
+\begin{center}
+	$\int^{\infty }_{0} b\left( t\right)  dt=\sum^{N}_{i=1} f\left( \xi_{i} \right)  \left( t_{i}-t_{i-1}\right)  \colon =\sum^{N}_{i=1} a_{i}\left( t_{i}-t_{i-1}\right)  $
+\end{center}
+\noindent
+Can be adapted to a stochastic integration with respect to Brownian motion.
+\\
+Thus, the stochastic integral with respect to the Brownian motion $W_{t}$ of the simple step function $b\left( t\right)  $ is defined by:
+\begin{center}
+	$\int^{\infty }_{0} b\left( t\right)  dW_{t}=\sum^{N}_{i=1} a_{i}\left( W_{t_{i}}-W_{t_{i-1}}\right)  $
+\end{center}
+
+\noindent
+\textbf{Proposition:} \textit{The stochastic integral $\int^{\infty }_{0} b\left( t\right)  dW_{t}$ defined above has a Gaussian distribution}
+\begin{center}
+	$\int^{\infty }_{0} b\left( t\right)  dW_{t}\sim N\left( 0,\int^{\infty }_{0} \mid b\left( t\right)  \mid^{2} dt\right)  $
+\end{center}
+\textit{With zero mean $E[\int^{\infty }_{0} b\left( t\right)  dW_{t}]=0$ and variance given by the It\^{o} isometry}
+\begin{center}
+	$Var\left[ \int^{\infty }_{0} b\left( t\right)  dW_{t}\right]  =E\left[ \left( \int^{\infty }_{0} b\left( t\right)  dW_{t}\right)^{2}  \right]  =\int^{\infty }_{0} \mid b\left( t\right)  \mid^{2} dt$
+\end{center}
+Suppose that $b\left( t,\  X_{t}\right)  $ now is any function in $L^{2}\left( \mathbb{R}^{+} \right).  $ In this case $\int^{\infty }_{0} f\left( t\right)  dW_{t}$ has a Gaussian distribution:
+\begin{center}
+	$\int^{\infty }_{0} f\left( t\right)  dW_{t}\sim N\left( 0,\int^{\infty }_{0} \mid f\left( t\right)  \mid^{2} dt\right)  $
+\end{center}
+~\\
+\textbf{Definition} ($\mathscr{F}_{t} -adapted$)
+\\
+\textit{A random variable X is said to be $\mathscr{F}_{t} -measurable$ if the knowledge of X depends only on the information up to time t. A process $(X_{t})_{t\in \mathbb{R}^{+} }$ is said to be $\mathscr{F}_{t} -adapted$ if $\mathscr{F}_{t} -measurable$ for all $t\in \mathbb{R}^{+} $}
+~\\
+~\\
+Let $b\left( t,\  X_{t}\right)  $ be a $\mathscr{F}_{t} -adapted$ process in the space $L^{2}\left( \Omega ,\left[ 0,\  T\right]  \right)  $ , which denote the space of stochastic process $X_{t}$ such that 
+\begin{center}
+	$\mid X_{t}\mid_{L^{2}\left( \Omega ,\  \left[ 0,\  T\right]  \right)  } \colon =\sqrt{E\left[ \int^{T}_{0} \mid X_{t}\mid^{2} dt\right]  } <\infty $
+\end{center}
+
+
+
+
+\subsection{It\^{o} rules}%1.4
+Consider
+\begin{center}
+	$\begin{array}{l}dW_{t}=W_{t+dt}-W_{t}\\ df\left( W_{t}\right)  =f\left( W_{t+dt}\right)  -f\left( W_{t}\right)  \end{array} $
+\end{center}
+Applying the Taylor expansion we have:
+\begin{center}
+	$df\left( W_{t}\right)  =f^{\prime }\left( W_{t}\right)  dW_{t}+\frac{1}{2} f^{\prime \prime }\left( W_{t}\right)  \left( dW_{t}\right)^{2}  +\frac{1}{3!} f^{\prime \prime \prime }\left( W_{t}\right)  \left( dW_{t}\right)^{3}  +\ldots $
+\end{center}
+However, from the construction of Brownian motion by it's small increments we see that
+\begin{center}
+	$dW_{t}=\pm \sqrt{dt} \  \Rightarrow \  \left( dW_{t}\right)^{2}  =dt$
+\end{center} 
+Besides,
+\begin{center}
+	$\begin{array}{c}\left( dW_{t}\right)^{3}  =\left( \pm \sqrt{dt} \right)^{3}  \approx 0\\ \left( dW_{t}\right)^{4}  =dt\cdot dt=dt^{2}\approx 0\end{array} $
+\end{center}
+Since the both terms can be neglected in the Taylor's formula at the first order approximation.\\The 
+It\^{o} rules can be summarized as
+\begin{enumerate}[(1).]
+	\item $\left( dt\right)^{2}  =dt\cdot dt=0$
+	\item $dt\cdot dW_{t}=0$
+	\item $dW_{t}\cdot dW_{t}=dt$
+\end{enumerate}
+\noindent
+Then we let  $(X_{t})_{t\in \mathscr{R}^{+}}$ be It\^{o} process of the form
+\begin{center}
+	$dX_{t}=a\left( t,\  X_{t}\right)  dt+b\left( t,\  X_{t}\right)  dW_{t}$
+\end{center}
+or
+\begin{center}
+	$X_{t}=X_{0}+\int^{t}_{0} a\left( s,\  X_{s}\right)  ds\  +\  \int^{t}_{0} b\left( t,\  X_{s}\right)  dW_{s}$
+\end{center}
+Where $a\left( t,\  X_{t}\right) $, $b\left( t,\  X_{t}\right)  $ are square-integrable adapted process $\left( L^{2}\left( \Omega ,\  \mathscr{R}^{+} \right)  \right).$ For any $f\in C^{2}\left( \mathscr{R}^{+} \times \mathscr{R}\right)  $  we have
+\begin{center}
+	$\begin{array}{c}df\left( t,\  X_{t}\right)  =\frac{\partial f}{\partial t} dt+\frac{\partial f}{\partial x} dX_{t}+\frac{1}{2} \frac{\partial^{2} f}{\partial x^{2}} b^{2}\left( t,\  X_{t}\right)  dt\\ =\left[ \frac{\partial f}{\partial t} +\frac{\partial f}{\partial x} a\left( t,\  X_{t}\right)  +\frac{1}{2} \frac{\partial^{2} f}{\partial x^{2}} b^{2}(t,\  X_{t})\right]  dt+\frac{\partial f}{\partial x} b\left( t,\  X_{t}\right)  dW_{t}\end{array} $
+\end{center}
+%----------------------------------------------------------------------------------------
+%	PROBLEM 2
+%----------------------------------------------------------------------------------------
+
+\section{Monte-Carlo Simulation}
+Usually, the fair value of a financial derivative can be presented as $e^{-rT}E^{Q}\left[ f\left( S_{T}\right)  \right]$, which exhibits often no analytic solution. The Monte-Carlo method can be employed by drawing randomly paths of the corresponding SDEs.
+\subsection{Monte-Carlo integration}
+\textbf{One-dimensional case}\\
+Let $X$ be a random variable with the density $f$. For a measurable function $g:\  \mathbb{R} \rightarrow \mathbb{R}$
+\begin{center}
+	$E\left[ g\left( X\right)  \right]  :=\int^{+\infty }_{-\infty } g\left( x\right)  f\left( x\right)  dx$
+\end{center}
+How to compute a finite integral on a finite interval $\left[ a, b\right]$
+\begin{center}
+	$\int^{b}_{a} g\left( x\right)  dx$
+\end{center}
+using Monte-Carlo method.
+\begin{itemize}
+	\item We use the uniform distribution on $D=\left[ a, b\right]$ with the density\begin{center}
+		$f=\frac{1}{b-a} \mathbbm{1}_{D} =\frac{1}{\lambda_{1} \left( D\right)  } \mathbbm{1}_{D}$
+	\end{center}
+	where $\lambda_{1}$ is the length of the interval.
+	\item Therefore we have\begin{center}
+		$\begin{gathered}E\left[ g\right]  \approx \int^{b}_{a} g\left( x\right)  \frac{1}{b-a} \mathbbm{1}_{D} dx=\int^{b}_{a} g\left( x\right)  \frac{1}{\lambda_{1} \left( D\right)  } \mathbbm{1}_{D} dx=\frac{1}{\lambda_{1} \left( D\right)  } \int^{b}_{a} g\left( x\right)  dx\\ \Rightarrow \underbrace{\int^{b}_{a} g\left( x\right)  dx=E\left( g\right)  \cdot \lambda_{1} \left( D\right)  }_{basis\  of\  the\  MC\  integration} \end{gathered} $
+	\end{center}
+	\item $x_{i}$ be samples of $U\left[ 0,1\right]$ for $i\in \mathbb{N}$, the estimator of $E\left[ g\right]$ is given by\begin{center}
+		$I_{N}:=\frac{1}{N} \sum^{N}_{i=1} g\left( x_{i}\right)  \left( law\  of\  large\  numbers\right)$
+	\end{center}
+\end{itemize}
+\textbf{High-dimensional case}\\
+Let $D_{m}\subseteq \mathbb{R}^{m}$ be a domain on which the integral
+\begin{center}
+	$\int^{}_{D_{m}} g\left( x\right)  dx$
+\end{center}
+has to be calculated. Similar to the one-dimensional case we have
+\begin{center}
+	$\int^{}_{D_{m}} g\left( x\right)  dx=E\left[ g\right]  \cdot \underbrace{\lambda_{m} \left( D_{m}\right)  }_{volume\  of\  D_{m}}$
+\end{center}
+and the corresponding estimator
+\begin{center}
+	$I^{m}_{N}:=\frac{1}{N} \sum^{N}_{i=1} g\left( X_{i}\right)  \cdot \lambda_{m} \left( D_{m}\right)  $
+\end{center}
+We define the error as
+\begin{center}
+	$e_{N}=\int^{}_{D_{m}} g\left( x\right)  dx-I^{m}$
+\end{center}
+which has the variance
+\begin{center}
+	$\begin{gathered}Var\left[ e_{N}\right]  =E\left[ e^{2}_{N}\right]  -E\left[ e_{N}\right]^{2}  =Var\left[ I^{m}\right]  =\frac{Var\left[ g\left( X_{i}\right)  \right]  }{N} \lambda^{2}_{m} \left( D_{m}\right)  \\ where\  Var\left[ g\right]  =\int^{}_{D^{m}} g^{2}dx-\left( \int^{}_{D^{m}} gdx\right)^{2}  \  and\  the\  standard\  deviation\  reads\\ \sigma \left( e_{N}\right)  =\frac{\sigma \left( g\right)  }{\sqrt{N} } \lambda_{m} \left( D_{m}\right)  \end{gathered}$
+\end{center}
+\textbf{Remark}\\
+Advantages:
+\begin{itemize}
+	\item Computation of the grid is cheap
+	\item Convergence rate $\mathcal{O} \left( \frac{1}{\sqrt{N} } \right)$ is independent of dim $m$ for fixed $g$
+	\item Intergrand $g$ doesn't need to be smooth
+\end{itemize}
+Disadvantages:
+\begin{itemize}
+	\item Convergence rate $\mathcal{O} \left( \frac{1}{\sqrt{N} } \right)$ is too slow
+	\item No strict error bound
+	\item Sensitivity with respect to choice of pseudo-random numbers
+\end{itemize}
+Improvement?
+\begin{itemize}
+	\item Variance reduction
+	\item Quasi Monte-Carlo integration (Van-der-Corput sequence, Halton sequence, Sobol sequence and so on)
+\end{itemize}
+
+
+\subsection{Simulation with SDE}
+Recall a SDE 
+\begin{center}
+	$dX_{t}=a\left( t,\  X_{t}\right)  dt+b\left( t,\  X_{t}\right)  dW_{t},0\leqslant t\leqslant T$
+\end{center}
+$X_{0}$ is given.
+$W:\left[ 0,T\right]  \times \Omega \rightarrow \mathbb{R} ,\  X:\left[ 0,T\right]  \times \Omega \rightarrow \mathbb{R} ,a, b:\left[ 0,T\right]  \times \mathbb{R} \rightarrow \mathbb{R}$
+and in integral form:
+\begin{center}
+	$X_{t}=X_{0}+\int^{t}_{0} a\left( s,\  X_{s}\right)  ds\  +\  \int^{t}_{0} b\left( t,\  X_{s}\right)  dW_{s}$
+\end{center}
+Step size: $h=\Delta t=\frac{T}{M} $, grid points: $t_{j}=jh,\  j=0,1,...,M-1$
+Approximations: $y_{0},y_{1},...,y_{M}$(initial value $y_{0}=X_{0}$)\\~\\
+\textbf{Definition}(The absolute error)\\
+The absolute error at time T is
+\begin{center}
+	$\epsilon(h):=E\left[\left|X_{T}-y_{T}^{h}\right|\right]=\int_{\Omega}\left|X_{T}-y_{T}^{h}\right| d P(w)$
+\end{center}~\\
+\textbf{Definition}(Strong convergence)\\
+An approximation $y^{h}_{T}$ converges strongly to $X_T$, if
+\begin{center}
+	$\lim _{h \rightarrow 0} E\left[\left|X_{T}-y_{T}^{h}\right|\right]=0$
+\end{center}
+We say $y^{h}_{T}$ converges strongly with order $\gamma >0$ if $\varepsilon \left( h\right)  =\mathcal{O} \left( h^{\gamma }\right) $\\~\\
+\textbf{Definition}(Weak Convergence)\\
+An approximation $y^{h}_{T}$ converges weakly to $X_T$ with respect to $g$, if
+\begin{center}
+	$\lim _{h \rightarrow 0} E\left[g\left(y_{T}^{h}\right)\right]=E\left[g\left(X_{T}\right)\right]$
+\end{center}
+$y^{h}_{T}$ converges weakly to $X_T$ with respect to $g$ of order $\gamma>0$, if
+\begin{center}
+	$\left|E\left[g\left(y_{T}^{h}\right)\right]-E\left[g\left(X_{T}\right)\right]\right|=\mathcal{O}\left(h^{\gamma}\right)$
+\end{center}
+$y^{h}_{T}$ is called weakly convergent if the property holds for all $g$.\\~\\
+Often just moments $X_T$ are of interest, i.e.
+\begin{center}
+	$E\left[ X^{q}_{T}\right]  ,q=1,2,3,...,;$
+\end{center}
+or $E\left[ g\left( X_{T}\right)  \right]$ with other function $g$, e.g. payoff function: European Call $e^{-rT}E^{Q}\left[ \left( S_{T}-K\right)^{+}  \right]$
+
+\subsection{Euler-Maruyama method}
+For $j=0,1,...,M-1$
+\begin{center}
+	$\begin{gathered}dW_{t_{j}}\approx \Delta W_{j}\left( \omega \right)  =W_{t_{j+1}}\left( \omega \right)  -W_{t_{j}}\left( \omega \right)  \sim N\left( 0,\Delta t\right)  \\ y_{j+1}=y_{j}+a\left( t_{j},y_{j}\right)  h+b\left( t_{j},y_{j}\right)  \underbrace{\Delta W_{j}\left( \omega \right)  }_{\sqrt{\Delta t} Z} ,\  Z\sim N\left( 0,1\right)  \end{gathered} $
+\end{center}
+Fixed $\omega \in \Omega $: particular path of $W_{t}$, sequence of real values $y_{0},y_{1},...,y_{m}$. Variable $\omega $: random process $W_{t}$, sequence of random values $y_{0},y_{1},...,y_{m}$.
+\\~\\\textbf{Remark}:
+The Euler-Maruyama method is strongly convergence with order $\gamma =\frac{1}{2} $ and weakly convergent with $\gamma =1$ for all polynomials $g$.
+
+\begin{algorithm}
+\caption{Euler-Maruyama method}\label{algorithm}
+\For{$i=0,...,m-1$}{$\Delta W=\sqrt{h} Z$, with $Z \sim N(0,1)$\\
+$y_{j+1}:=y_{j}+a(t_{j}, y_{j}) h+b(t_{j}, y_{j})\Delta W$}
+\end{algorithm}
+
+\subsection{Milstein Method}
+$It\hat{o} -Taylor\  Expansion\  of\  SDE$\\
+Starting with a SDE (autonomous)
+\begin{center}
+	$d X_{t}=a\left(X_{t}\right) d t+b\left(X_{t}\right) d W_{t}, \quad t \geq t_{0}$
+\end{center}
+Apply $It\hat{o}$ lemma for $f(X_t)$
+\begin{center}
+	$f\left(X_{t}\right)=f\left(X_{t_{0}}\right)+\int_{t_{0}}^{t}\left[f^{\prime}\left(X_{s}\right) a\left(X_{s}\right)+\frac{1}{2} f^{\prime \prime}\left(X_{s}\right) b^{2}\left(X_{s}\right)\right] d s+\int_{t_{0}}^{t} f^{\prime}\left(X_{s}\right) b\left(X_{s}\right) d W_{s}$
+\end{center}
+Special case: $f\left( X_{t}\right)  \equiv X_{t}$:
+\begin{center}
+	$X_{t}=X_{t_{0}}+\int_{t_{0}}^{t} a\left(X_{s}\right) d s+\int_{t_{0}}^{t} b\left(X_{s}\right) d W_{s}$
+\end{center}
+Setting $f=a$ and $f=b$ implies
+\begin{center}
+	$X_{t}=X_{t_{0}}+\int_{t_{0}}^{t}\left[a\left(X_{t_{0}}\right)+\int_{t_{0}}^{s}\left(a^{\prime}\left(X_{z}\right) a\left(X_{z}\right)+\frac{1}{2} a^{\prime \prime}\left(X_{z}\right) b^{2}\left(X_{z}\right)\right) d z+\int_{t_{0}}^{s} a^{\prime}\left(X_{z}\right) b\left(X_{z}\right) d W_{z}\right] d s$
+$+\int_{t_{0}}^{t}\left[b\left(X_{t_{0}}\right)+\int_{t_{0}}^{s}\left(b^{\prime}\left(X_{z}\right) a\left(X_{z}\right)+\frac{1}{2} b^{\prime \prime}\left(X_{z}\right) b^{2}\left(X_{z}\right)\right) d z+\int_{t_{0}}^{s} b^{\prime}\left(X_{z}\right) b\left(X_{z}\right) d W_{z}\right] d W_{s}$
+$\Rightarrow X_{t}=a\left(X_{t_{0}}\right)\left(t-t_{0}\right)+b\left(X_{t_{0}}\right) \int_{t_{0}}^{t} d W_{s}+R$ (includes double integrals)
+\end{center}
+If we neglect $R\Rightarrow $ Euler-Maruyama method
+\\Assume that the integrands are bounded:
+\begin{center}
+	$\int_{t_{0}}^{t_{0}+h} \int_{t_{0}}^{s} d z d s=\int_{t_{0}}^{t_{0}+h}\left(s-t_{0}\right) d s=\frac{1}{2} h^{2}$\\
+$\int_{t_{0}}^{t_{0}+h} \int_{t_{0}}^{s} d W_{z} d s=\int_{t_{0}}^{t_{0}+h}\left(W_{s}-W_{t_{0}}\right) d s$\\
+$\int_{t_{0}}^{t_{0}+h} \int_{t_{0}}^{s} d z d W_{s}=\int_{t_{0}}^{t_{0}+h}\left(s-t_{0}\right) d W_{s}$
+\end{center}
+One can prove that
+\begin{center}
+	$\int_{t_{0}}^{t_{0}+h} \int_{t_{0}}^{s} d W_{z} d s+\int_{t_{0}}^{t_{0}+h} \int_{t_{0}}^{s} d z d W_{s}=\underbrace{\int_{t_{0}}^{t_{0}+h} d W_{s}}_{O\left(h^{\frac{1}{2}}\right)} \underbrace{\int_{t_{0}}^{t_{0}+h} d s}_{O(h)} .$
+\end{center}
+Thus, the both double integrals are of oder $\left( h\right)^{\frac{3}{2} }  $
+Further, we obtain
+\begin{center}
+	$\int_{t_{0}}^{t_{0}+h} \int_{t_{0}}^{s} d W_{z} d W_{s} \approx O(h)$
+\end{center}
+Dominating term in reminder $R$ is
+\begin{center}
+	$\begin{aligned} \int_{t_{0}}^{t} \int_{t_{0}}^{s} & \underbrace{b^{\prime}\left(X_{z}\right) b\left(X_{z}\right)}_{\text {might be considered as constant }} d W_{z} d W_{s} \approx b^{\prime}\left(X_{z}\right) b\left(X_{z}\right) \int_{t_{0}}^{t} \int_{t_{0}}^{s} d W_{z} d W_{s}=\frac{b^{\prime} b}{2}\left((\Delta W)^{2}-h\right) \\ & \Rightarrow X_{t}=X_{t_{0}}+a\left(X_{t_{0}}\right)\left(t-t_{0}\right)+b\left(X_{t_{0}}\right) \int_{t_{0}}^{t} d W_{s}+\frac{b^{\prime} b}{2} \int_{t_{0}}^{t} \int_{t_{0}}^{s} d W_{z} d W_{s}+\widetilde{R} \end{aligned}$
+\end{center}
+If we neglect $\widetilde{R} \Rightarrow$ Milstein method.\\~\\
+\textbf{Milstein method}
+For $j=0,1,...,M-1$
+\begin{center}
+	$\begin{gathered}dW_{t_{j}}\approx \Delta W_{j}\left( \omega \right)  =W_{t_{j+1}}\left( \omega \right)  -W_{t_{j}}\left( \omega \right)  \sim N\left( 0,\Delta t\right)  \\ y_{j+1}=y_{j}+a\left(t_{j}, y_{j}\right) h+b\left(t_{j}, y_{j}\right) \Delta W_{j}(\omega)+\frac{1}{2} b^{\prime}\left(t_{j}, y_{j}\right) b\left(t_{j}, y_{j}\right)\left(\left(\Delta W_{j}(\omega)\right)^{2}-h\right)\end{gathered}$
+\end{center}
+\textbf{Remark}: Milstein method has strong and weak convergence of order $\gamma=1$.
+\begin{algorithm}
+\caption{Milstein method}\label{algorithm}
+\For{$i=0,...,m-1$}{$\Delta W=\sqrt{h} Z$, with $Z \sim N(0,1)$\\
+$y_{j+1}=y_{j}+a\left(t_{j}, y_{j}\right) h+b\left(t_{j}, y_{j}\right) \Delta W_{j}(\omega)+\frac{1}{2} b^{\prime}\left(t_{j}, y_{j}\right) b\left(t_{j}, y_{j}\right)\left(\left(\Delta W_{j}(\omega)\right)^{2}-h\right)$}
+\end{algorithm}
+
+\subsection{Stochastic Runge-Kutta method}
+We want to avoid the evaluations of higher-order derivatives in the Taylor methods. Try to omit derivatives $b^{\prime }\left( \frac{\partial b}{\partial x} \right)  $ the in Milstein method. Consider
+\begin{center}
+	$d X_{t}=a\left(X_{t}\right) d t+b\left(X_{t}\right) d W_{t}$
+\end{center}
+and
+\begin{center}
+	$\begin{aligned} b\left(X_{t}+\Delta X_{t}\right)-b\left(X_{t}\right) &=b^{\prime}\left(X_{t}\right) \Delta X_{t}+O\left(\left|X_{t}\right|^{2}\right) \\ &=b^{\prime}\left(X_{t}\right)\left(a\left(X_{t}\right) d t+b\left(X_{t}\right) d W_{t}\right)+O(h) \\ &=b^{\prime}\left(X_{t}\right) b\left(X_{t}\right) d W_{t}+O(h) . \end{aligned}$
+\end{center}
+We thus have
+\begin{center}
+	$\frac{b\left(X_{t}+\Delta X_{t}\right)-b\left(X_{t}\right)}{d W_{t}}+O(\sqrt{h})=b^{\prime}\left(X_{t}\right) b\left(X_{t}\right)$
+\end{center}
+Replacing $b^{\prime }b$ in the Milstein method we obtain the stochastic Runge-Kutta method with strong order $\gamma=1$
+
+\begin{algorithm}
+\caption{RK method}\label{algorithm}
+\For{$i=0,...,m-1$}{$\Delta W=\sqrt{h} Z$, with $Z \sim N(0,1)$\\
+$\hat{y}:=y_{j}+a\left(t_{j}, y_{j}\right)h+b\left(t_{j}, y_{j}\right) \sqrt{h}$\\
+$\left.y_{j+1}:=y_{j}+a\left(t_{j}, y_{j}\right) h+b\left(t_{j}, y_{j}\right) \Delta W+\frac{1}{2 \sqrt{h}}\left(b\left(t_{j}, \hat{y}\right)-b\left(t_{j}, y_{j}\right)\right)\left((\Delta W)^{2}-h\right)\right)$}
+\end{algorithm}
+\newpage~\\
+\textbf{Monte-Carlo simulation of an European option}
+\begin{enumerate}[1.]
+	\item For $k=1,...,N$: solve SDE for $S_t$ with $0\leqslant t\leqslant T(Em, Milstein, etc.)$
+	\item Evaluate payoff function for $k=1,...,N$\begin{center}
+		$V\left(T, S_{T}\right)_{k}:=V\left(T,\left(S_{T}\right)_{k}\right)=\Lambda\left(\left(S_{T}\right)_{k}\right)$
+	\end{center}
+	\item Estimation of a risk-neutral expectation\begin{center}
+		$\theta_{N}\left(V\left(T, S_{T}\right)\right):=\frac{1}{N} \sum_{k=1}^{N}\left(V\left(T, S_{T}\right)_{k}\right)$
+	\end{center}
+	\item Discounted value\begin{center}
+		$\hat{V}:=e^{-r(T-t)} \theta_{N}\left(V\left(T, S_{T}\right)\right)$
+	\end{center}
+\end{enumerate}
+Obviously, $\theta_{N}\left(V\left(T, S_{T}\right)\right)$ is an estimator for $V(t,S_t)$
+\begin{itemize}
+	\item $E\left[\theta_{N}\left(V\left(T, S_{T}\right)\right)\right]=\frac{1}{N} \sum_{k=1}^{N} E\left[V\left(T, S_{T}\right)_{k}\right]=E\left[V\left(T, S_{T}\right)\right]$
+	\item $\operatorname{Var}\left[\theta_{N}\left(V\left(T, S_{T}\right)\right)\right]=\frac{1}{N^{2}} \sum_{k=1}^{N} E\left[V\left(T, S_{T}\right)_{k}\right]=\frac{\operatorname{Var}\left[V\left(T, S_{T}\right)\right]}{N}$
+\end{itemize}
+Rate of convergence: $\mathcal{O} \left( \frac{1}{\sqrt{N} } \right)  $\\
+\textbf{Remark}: Bias: Monte-Carlo simulation exhibits sampling error $\mathcal{O} \left( \frac{1}{\sqrt{N} } \right)  $. Additional error appear due to discretization in case of path-dependent option.
+
+
+\section{Numerical Methods for PDEs}
+In this section we introduce Black-Scholes Partial difference Equation (B-S PDE) and three different numerical methods, namely Finite Difference Method (FDM), Finite Element Method (FEM) and Finite Volume Method (FVM) to get the numerical solution of the equation. In FDM and FEM we convert the B-S equation into one Heat equation and in FVM we convert it into one self-joint form.
+
+\subsection{Black-scholes Partial Difference Equation}
+The Black-Scholes partial difference equation is an important mathmatical model for the pricing of financial derivatives. In this paper, we assume the model as following:
+\begin{enumerate}[1.]
+	\item No transaction cost
+	\item No dividend paying
+	\item Risk-free interest rate r
+	\item Maturity  time T
+	\item The Underlying asset follow a Geometric Brownian Motion(GBM):
+	\begin{center}
+	$dS_{t} = \mu S_{t}dt + \sigma S_{t}dW_{t}$.
+	\end{center}
+\end{enumerate}
+We write the option value as a function of its variables
+\begin{center}
+$V_t(t,T,r,\mu,\sigma, K, S_t)\leadsto V_t(t,S_t)$,
+\end{center}
+We assume we have a bond $\pi$, which can also be replicated by an Option $V$ and $\Delta$ stock $S$.
+\begin{center}
+	$\pi  = V + \Delta S$
+\end{center}
+then we can derive Black-Scholes PDE(linear parabolic) according to It\^{o} rules
+$$\leadsto \frac{\partial V}{\partial t} + \frac{1}{2}\sigma^{2}S^2\frac{\partial^2 V}{\partial S^2} + rS\frac{\partial V}{\partial S} - rV = 0$$
+in the interval $S \in (-\infty, +\infty)$ and for $for t \in [0, T]$. The parameters are listed in the following Table:
+\begin{center}
+	\begin{tabular}{|c|l|}
+\hline
+	Parameter & Description\\
+\hline 
+	r&Continuously compounded, annualized risk-free rate. \\
+\hline 
+	$\sigma$ & Volatility of the stock price. \\ 
+\hline 
+	S & Stock price \\ 
+\hline 
+	K & Strike price \\ 
+\hline 
+	T & Maturity \\ 
+\hline 
+	\end{tabular} 
+\end{center}
+For the call option, the boundary conditions can be expressed as
+\begin{itemize}
+\item$v(0, t) = 0$
+\item$v(S, t) \rightarrow Sexp(-d(T-t))-Kexp(-r(T-t))$, for $S \rightarrow \infty$,
+\end{itemize}
+and the terminal condition is defined as
+\begin{center}
+$v(S,T) = (S -K)^+$.
+\end{center}
+with the notation $(a)^+ := max(a,0)$
+\subsection{Convert to Heat-equation}
+Here we would use substitution method to convert the B-S equation to Heat-Equation.
+
+we denote
+$$x = ln(\frac{S}{K}),  \tau = \frac{T-t}{2}\sigma^2$$,
+
+so the partial derivative in the B-S equation can be converted to 
+\begin{center}
+\begin{itemize}
+ 
+\item$\frac{\partial V}{\partial t} = \frac{\partial V}{\partial \tau}\frac{\partial \tau}{\partial t}  = -\frac{\sigma^2}{2} \frac{\partial V}{\partial \tau} $
+ 
+\item$\frac{\partial V}{\partial S} = \frac{\partial V}{\partial x}\frac{\partial x}{\partial S}  = \frac{1}{S} \frac{\partial V}{\partial x} $
+ 
+\item$\frac{\partial V}{\partial t} = \frac{\partial V}{\partial \tau}\frac{\partial^2 V}{\partial S^2}  = \frac{\partial }{\partial S}(\frac{1}{S} \frac{\partial V}{\partial x}) $ 
+\end{itemize}
+\end{center}
+
+Then we can get the following PDE with substituting the formulas above into the B-S equation:
+
+$$-\frac{\sigma^2}{2} \frac{\partial V}{\partial \tau} +\frac{\sigma^2}{2} \frac{\partial^2 V}{\partial x^2} + (r - \frac{\sigma^2}{2})\frac{\partial V}{\partial x}- rV = 0$$
+
+
+
+we set 
+\begin{center}
+$V(\tau, x) = Ku(\tau, x)e^{\alpha x + \beta \tau}$,
+\end{center}
+then we get
+\begin{itemize}
+\item$\frac{\partial V}{\partial \tau} = K(\frac{\partial u}{\partial \tau}e^{\alpha x + \beta \tau}+u(\tau, x)e^{\alpha x + \beta \tau}\beta)= Ke^{\alpha x + \beta \tau}(\frac{\partial u}{\partial \tau}+\beta u(\tau, x))$ 
+\item$\frac{\partial V}{\partial x} = K(\frac{\partial u}{\partial x}e^{\alpha x + \beta \tau}+u(\tau, x)e^{\alpha x + \beta \tau}\alpha)= Ke^{\alpha x + \beta \tau}(\frac{\partial u}{\partial x}+\alpha u(\tau, x))$
+\item$\frac{\partial^2 V}{\partial x^2} = K[e^{\alpha x + \beta \tau}\alpha(\frac{\partial u}{\partial \tau}+\alpha u(\tau, x))+e^{\alpha x + \beta \tau}(\frac{\partial^2 u}{\partial x^2}+\alpha \frac{\partial u}{\partial x})]$\\
+\\
+$= K[e^{\alpha x + \beta \tau}\alpha(e^{\alpha x + \beta \tau}(\frac{\partial^2 u}{\partial x^2}+2\alpha \frac{\partial u}{\partial x})+\alpha^2u(\tau, x)]$ 
+\end{itemize}
+substituting the above partial derivative into the B-S PDE, we get the following heat conduction equation:\\
+
+$$(\frac{\partial u}{\partial \tau}+\beta u(\tau,x)) - \frac{1}{2} \sigma^2 (\frac{\partial^2 u}{\partial x^2}+2\alpha\frac{\partial u}{\partial x }+\alpha^2 u(\tau, x)- (r - \frac{1}{2}\sigma^2)(\frac{\partial u}{\partial x}+\alpha u(\tau,x)) + ru(\tau,x) = 0$$,
+
+continue simplifying:
+
+$$\frac{\partial u}{\partial \tau} - \frac{1}{2} \sigma^2 \frac{\partial^2 u}{\partial x^2}-(\sigma^2 \alpha +r - \frac{1}{2}\sigma^2)\frac{\partial u}{\partial x}+[\beta - \frac{1}{2}\sigma^2\alpha^2-(r-\frac{1}{2}\sigma^2)\alpha + r]u(\tau,x) = 0$$
+
+then we do the substitution, set:
+\begin{itemize}
+\item$\sigma^2\alpha+r-\frac{1}{2}\sigma^2 = 0 \rightarrow \alpha = \frac{1}{2}-\frac{r}{\sigma^2}$
+\item$\beta - \frac{1}{2}\sigma^2 \alpha^2 - (r - \frac{1}{2}\sigma^2)\alpha+r = 0 \rightarrow \beta = \frac{1}{2}\sigma^2[\alpha^2 + (\frac{2r}{\sigma^2}-1)\alpha - \frac{2r}{\sigma^2}] = -\frac{1}{4}(\frac{2r}{\sigma^2}+1)^2$
+\end{itemize}
+Then we can get the Heat-Equation form for B-S form:
+
+$$
+\frac{\partial u}{\partial \tau} = \frac{\partial^2 u}{\partial x^2}
+$$
+
+with
+
+$$
+  x = \ln\left(\frac{S}{k}\right), \quad \tau = \frac{1}{2}\sigma^2(T-t), \quad v(\tau, x) = \frac{V}{K}
+$$
+
+and
+$$
+  u(\tau, x) = v(\tau, x) e^{-\alpha x - \beta \tau}
+$$
+in the domain $x \in \mathbb{R}$ and $\tau \in [0, \frac{1}{2}\sigma^2T]$.\\\\
+And set $k = \frac{2r}{\sigma^2}$, so the boundary value can be formed by following:
+$$u(\tau,x_{min}) = 0$$
+$$u(\tau,x_{max}) = exp(\frac{1}{2}(k+1)x_{max} + \frac{1}{4}(k+1)^2\tau) -exp(\frac{1}{2}(k-1)x_{max}+\frac{1}{4}(k-1)^2\tau)$$
+and with the terminal value, i.e. $\tau = \frac{1}{2}\sigma^2T $:
+$$u(\frac{1}{2}\sigma^2T,x) = exp(\frac{1}{2}(k-1)x)*max(0,e^x-1)$$
+\subsection{Finite Difference Methods (FDM)}
+AS we have seen that the Black-Scholer PDE can be transformed into a heat equation with specified initial and boundary conditions. In this section we introduce the finite difference methods (FDM) to solve Black-Scholes equation. \\
+
+In FDM the PDE's partial derivatives are replaced by discrete approximations obtained via Taylor expansions.\\
+\textbf{Difference approximation (Taylor Expansion)}\\
+Let $f:[\alpha, \beta] \rightarrow \mathbb{R}$ with $f \in C^k$, e.g., we consider the Taylor expansion for $ f \in C^2$:
+$$
+f(x+h) = f(x) + hf'(x) + \frac{h^2}{2}f''(\varepsilon); \varepsilon \in (x, x+h)$$
+
+$$
+\Rightarrow f'(x) = \frac{1}{h}[f(x+h)-f(x)] - \frac{h}{2}f''(\varepsilon)
+$$
+Grid: $...<x_{i-1}<x_i<x_{i+1}<...$, equidistant step size $h = x_{i+1} - x_i$
+
+$$
+f'(x_i) = \frac{1}{h}[f(x_{i+1}) - f(x_i)]+ O(h)
+$$
+
+$$
+f_i := f(x_i) \leadsto f'(x_i) \approx \frac{1}{h}[f_{i+1} - f_{i}]
+$$
+\begin{itemize}
+\item Central difference:
+$$
+f'(x_i) = \frac{1}{2h}[f_{i+1} - f_{i-1}]+O(h^2), f\in C^3
+$$
+\item Central approximation for the second derivative:
+$$
+f''(x_i) = \frac{1}{h^2}[f_{i+1} - 2f_i + f_{i-1}]+O(h^2), f\in C^4
+$$
+\end{itemize}
+\textbf{The explicit method}\\
+
+Consider the following difference formulas
+$$
+\frac{\partial y}{\partial t}|_{i,j} = \frac{1}{\Delta \tau}[y_{i+1,j}-y_{i,j}]+O(\Delta \tau)
+$$
+
+$$
+\frac{\partial^2 y}{\partial x^2}|_{i,j} = \frac{1}{\Delta x^2}[y_{i,j+1}-2y_{i,j}+y_{i,j-1}]+O(\Delta x^2)
+$$
+We neglect the error term (unknown) and denote the approximation of the exact solution $y_{i,j}$ by $w_{i,j}$:
+$$
+\frac{1}{\Delta \tau}[w_{i+1,j}-w_{i,j}] = \frac{1}{\Delta x^2}[w_{i,j+1}-2w_{i,j}+w_{i,j-1}]
+$$
+
+$$
+\Rightarrow w_{i+1,j} = w_{i,j} + \frac{\Delta \tau}{\Delta x^2}[w_{i,j+1}-2w_{i,j}+w_{i,j-1}]
+$$
+
+$$w_{i+1,j} = \lambda w_{i,j-1}+(1 - 2\lambda)w_{i,j}+\lambda w_{i,j+1},$$
+where $\lambda = \frac{\Delta \tau}{\Delta x^2}$, and $w_{i+1,j}, j = 1, ... ,M$ can be computed with $w_{i,j}, j = 0,1, ... , M+1$, where $w_{i,j}, j = 0,M+1$ are boundary points. This can be represented in matrix form as:
+$$
+w^{(i+1)}=\begin{bmatrix}
+1-2\lambda  & \lambda  & 0  & \cdots & 0 \\ 
+\lambda &1-2\lambda  & \ddots  &\ddots   & 0\\ 
+ 0& \ddots  & \ddots  & \ddots  & \vdots \\ 
+ \vdots & \ddots  & \ddots  &\ddots   & \lambda\\ 
+ 0& \cdots  &\cdots   &\lambda  & 1-2\lambda
+\end{bmatrix}w^{(i)}
+$$
+where $w^{(i)} = (w_{i,1}, ..., w_{i,M-1})^T \in \mathbb{R}^M$.\\\\
+\textbf{The implicit method}\\
+
+For the implicit method we consider the following temporal and spatial discretion: 
+$$
+\frac{\partial y}{\partial t}|_{i,j} = \frac{1}{\Delta \tau}[y_{i+1,j}-y_{i,j}]+O(\Delta \tau)
+$$
+
+$$
+\frac{\partial^2 y}{\partial x^2}|_{i,j} = \frac{1}{\Delta x^2}[y_{i,j+1}-2y_{i,j}+y_{i,j-1}]+O(\Delta \tau)
+$$
+In a similar way as explicit method, we obtain:
+$$
+w_{i-1,j} = -\lambda w_{i,j-1} + (1+2\lambda)w_{i,j} - \lambda w_{i,j+1},
+$$
+which is the system for unknown $w_{1,j}, j = 1, ... ,M$ with known $w_{i,j}, j = 0,1, ... , M+1$, where $w_{i,0}$ and $w_{i,M+1}$ are boundary points. Again we write it in a matrix form as:
+$$
+\leadsto \begin{bmatrix}
+1+2\lambda  & -\lambda  & 0  & \cdots & 0 \\ 
+-\lambda &1+2\lambda  & \ddots  &\ddots   & 0\\ 
+ 0& \ddots  & \ddots  & \ddots  & \vdots \\ 
+ \vdots & \ddots  & \ddots  &\ddots   & -\lambda\\ 
+ 0& \cdots  &\cdots   &-\lambda  & 1+2\lambda
+\end{bmatrix}w^{(i)} = w^{(i-1)}$$
+where $ w^{(i)} = (w_{i,1}, ... , w_{i, M-1})^T \in \mathbb{R}^M $.\\\\
+\textbf{The Crank-Nicolson Method}\\
+
+To archive an unconditionally stable method of the second order by averaging the forward and backward difference methods.\\\\
+Forward:
+$$
+\frac{1}{\Delta \tau}[w_{i+1,j}-w_{i,j}] = \frac{1}{\Delta x^2}[w_{i,j+1}-2w_{i,j}+w_{i,j-1}]
+$$
+Backward:
+$$
+\frac{1}{\Delta \tau}[w_{i+1,j}-w_{i,j}] = \frac{1}{\Delta x^2}[w_{i+1,j+1}-2w_{i+1,j}+w_{i+1,j-1}]
+$$
+Combining both the difference method above one obtain
+$$
+\frac{2}{\Delta \tau}[w_{i+1,j} - w_{i,j}]= \frac{1}{\Delta x^2}[w_{i,j+1}-2w_{i,j}+w_{i,j-1}+w_{i+1,j+1} - 2w_{i+1,j}+w_{i+1,j-1}],
+$$
+namely
+$$
+-\frac{\lambda}{2} w_{i+1,j-1}+(1+\lambda) w_{i+1,j} - \frac{\lambda}{2}w_{i+1,j+1} = \frac{\lambda}{2}w_{i,j-1}+(1-\lambda)w_{i,j} + \frac{\lambda}{2}w_{i,j+1}
+$$
+We call the method above Crank-Nicolson method which can be represented in a matrix form:
+$$
+\leadsto \begin{bmatrix}
+1+\lambda  & -\frac{\lambda}{2}  & 0  & \cdots & 0 \\ 
+-\frac{\lambda}{2} &1+\lambda  & \ddots  &\ddots   & 0\\ 
+ 0& \ddots  & \ddots  & \ddots  & \vdots \\ 
+ \vdots & \ddots  & \ddots  &\ddots   & -\frac{\lambda}{2}\\ 
+ 0& \cdots  &\cdots   &-\frac{\lambda}{2}  & 1+\lambda
+\end{bmatrix}w^{(i+1)} = \begin{bmatrix}
+1-\lambda  & \frac{\lambda}{2}  & 0  & \cdots & 0 \\ 
+\frac{\lambda}{2} &1-\lambda  & \ddots  &\ddots   & 0\\ 
+ 0& \ddots  & \ddots  & \ddots  & \vdots \\ 
+ \vdots & \ddots  & \ddots  &\ddots   & \frac{\lambda}{2}\\ 
+ 0& \cdots  &\cdots   &\frac{\lambda}{2}  & 1-\lambda
+\end{bmatrix}w^{(i)}
+$$
+
+$$
+\leadsto Aw^{(i+1)} = Bw^{(i)}
+$$
+
+with $ w^{(i)} = (w_{i,1}, ... , w_{i, m-1})^T \in \mathbb{R}^M $.\\\\
+\textbf{Boundary conditions}\\
+
+The Black-Scholes equation for $V$ has boundary conditions with $S\rightarrow 0$ and $ S \rightarrow \infty $. For the transformation to the heat equation we have used:
+$$
+S = Ke^x \Leftrightarrow x = ln(\frac{S}{K}).
+$$ 
+Obviously, we have
+\begin{itemize}
+\item$S \rightarrow 0 \Leftrightarrow x \rightarrow -\infty$
+\item$S \rightarrow \infty \Leftrightarrow x \rightarrow +\infty$
+\end{itemize}
+Recall that we for the European calls $S \rightarrow 0 : V = 0, S \rightarrow \infty : V = S - Ke^{-r(T - t)} \approx S$ and for the European puts $S \rightarrow 0 : V = Ke^{r(T-t)}, S \rightarrow \infty : V = 0$. From these boundaries we can derive the transformed boundaries conditions for the heat equation
+$$
+\frac{\partial u}{\tau} = \frac{\partial^2 u}{\partial x^2}.
+$$
+We set that
+\begin{center}
+$
+u(\tau, x) = \gamma_1(\tau,x) $ for $x\rightarrow -\infty
+$
+\end{center}
+\begin{center}
+$
+u(\tau, x) = \gamma_2(1\tau,x)$ for $x \rightarrow \infty
+$
+\end{center}
+
+Recall the transformation that we used:
+
+$$
+v(\tau,x) = V/K\begin{cases}
+Call:\begin{cases}
+0; &  S \rightarrow 0 (x \rightarrow -\infty) \\ 
+ \frac{S}{K} = e^x;& S \rightarrow \infty (x \rightarrow \infty)
+\end{cases} &  \\ 
+ Put:\begin{cases}
+e^{-r(T-t)} = e^{-k\tau}; & S \rightarrow 0 (x \rightarrow -\infty)\\ 
+0; & S \rightarrow \infty(x \rightarrow \infty)
+\end{cases}& 
+\end{cases}
+$$
+
+Hence, we have for the calls
+$$
+\begin{cases}
+ \gamma_1(\tau, x) =  0& \\ 
+ \gamma_2(\tau, x) = e^{\frac{1}{2}(k-1)x + \frac{1}{4}(k+1)^2\tau}\cdot v(\tau, x) = e^{\frac{1}{2}(k-1)x + \frac{1}{4}(k+1)^2\tau}& 
+\end{cases}
+$$
+and for the Puts
+$$
+\begin{cases}
+ \gamma_1(\tau, x) = e^{\frac{1}{2}(k+1)x+\frac{1}{4}(k+1)^2\tau}&  \\ 
+ \gamma_2(\tau, x) = 0& 
+\end{cases}
+$$
+For practical use we need to truncate the domain $-\infty < x < \infty $ to e.g.,$a = x_{min} < x < x_{max} = b$:
+$$
+u(\tau, a) = \gamma_1(\tau, a)
+$$
+
+$$
+u(\tau, b) = \gamma_2(\tau, b)
+$$
+For example, by including the boundary conditions we rewrite the system for the Crank-Nicolson method as:
+$$
+Aw^{(i+1)} = Bw^{(i)} + d^{(i)}$$ with $$d = \frac{\lambda}{2}\begin{bmatrix}
+\gamma_1(\tau_i,a)+\gamma_1(\tau_{i+1},a)\\ 
+0\\ 
+\vdots \\ 
+0\\ 
+\gamma_2(\tau_i,b)+\gamma_2(\tau_{i+1},b)
+\end{bmatrix}.
+$$
+\subsection{Consistency, Stability and Convergence of Parabolic PDE with FDM}
+\textbf{Definition 5.1 Consistency}\\
+Given a partial differential equation $Pu = f$ and a finite difference scheme, $P_{\Delta t, \Delta x}v = f$, we say that the finite difference scheme is consistent with the partial differential equation if for any smooth function $\phi(t, x)$ 
+\begin{center}
+$ P\phi - P_{\Delta t, \Delta x}\phi \rightarrow 0 $ as $ \Delta t, \Delta x \rightarrow 0 $
+\end{center}
+\textbf{Example}\\
+Consider our parabolic model here, given the operator $P = \partial /\partial t - \partial / \partial x$
+$$
+P\phi = \phi_t - \phi_{xx}\\
+$$ 
+with $\alpha$ greater than 0. We will evaluate the consistency of the forward-time and central space approximation for the second derivative.\\
+First we consider the Explicit method:
+$$
+P_{\Delta t, \Delta x}\phi = \frac{w_{i+1,j} - w_{i,j}}{\Delta \tau} - \frac{w_{i,j+1} - 2w_{i,j} + w_{i,j-1}}{\Delta^2 x}
+$$
+then with Taylor expansion:
+$$
+w_{i+1,j} = w_{i,j} + \Delta \tau w_{\tau} + \frac{1}{2} \Delta^2 \tau w_{\tau \tau} + O(\Delta^3 \tau)
+$$
+
+$$
+w_{i,j+1} = w_{i,j} + \Delta x w_x + \frac{1}{2} \Delta^2 w_{xx} + \frac{1}{6}\Delta^3 w_{xxx} + \frac{1}{24}\Delta^4 w^{(4)}_x + O(\Delta^5 x)
+$$
+
+$$
+w_{i,j+1} = w_{i,j} - \Delta x w_x + \frac{1}{2} \Delta^2 w_{xx} - \frac{1}{6}\Delta^3 w_{xxx} + \frac{1}{24}\Delta^4 w^{(4)}_x + O(\Delta^5 x)
+$$
+$$
+\Rightarrow P_{\Delta \tau, \Delta x}\phi = w_{\tau} - w_{xx} + \frac{1}{2}\Delta \tau w_{\tau \tau} - \frac{1}{12}\Delta^2 x w^{(4)}_x + O(\Delta^3 x) + O(\Delta^2 \tau)
+$$\\
+Thus, as $(\Delta t , \Delta x) \rightarrow 0, P\phi - P_{\Delta \tau, \Delta x}\phi = -\frac{1}{2}\Delta \tau w_{\tau \tau} + \frac{1}{12}\Delta^2 x w^{(4)}_x + O(\Delta^3 x) + O(\Delta^2 \tau) \rightarrow 0$\\\\
+Thus, this scheme is consistent.\\\\
+Next we go for the Implicit method:
+$$
+P_{\Delta \tau, \Delta x}\phi = \frac{w_{i,j} - w_{i-1,j}}{\Delta \tau} - \frac{w_{i,j+1} - 2w_{i,j} + w_{i,j-1}}{\Delta^2 x}
+$$
+similar to the explicit method, with Taylor expansion and some substitutions, we can get that :
+$$
+P_{\Delta \tau, \Delta x}\phi = w_{\tau} - w_{xx} - \frac{1}{2}\Delta \tau w_{\tau \tau} - \frac{1}{12}\Delta^2 x w^{(4)}_x + O(\Delta^3 x) + O(\Delta^2 \tau)
+$$\\
+Thus, as $(\Delta t , \Delta x) \rightarrow 0, P\phi - P_{\Delta \tau, \Delta x}\phi = -\frac{1}{2}\Delta \tau w_{\tau \tau} + \frac{1}{12}\Delta^2 x w^{(4)}_x + O(\Delta^3 x) + O(\Delta^2 \tau) \rightarrow 0$\\\\
+Thus, this scheme is consistent.\\\\
+Last let us consider Crank-Nicolson Method:
+$$
+P_{\Delta \tau, \Delta x}\phi = [\frac{2}{\Delta \tau}[w_{i+1,j} - w_{i,j}]- \frac{1}{\Delta x^2}[w_{i,j+1}-2w_{i,j}+w_{i,j-1}+w_{i+1,j+1} - 2w_{i+1,j}+w_{i+1,j-1}]]/2,
+$$\\
+with the same approach as above we can get:
+$$
+P_{\Delta \tau, \Delta x}\phi =  w_{\tau} - w_{xx} + \frac{1}{2}\Delta \tau w_{\tau \tau} - \frac{1}{12}\Delta^2 x w^{(4)}_x +  \bar{w}_{\tau} - \bar{w}_{xx} + \frac{1}{2}\Delta \tau \bar{w}_{\tau \tau} - \frac{1}{12}\Delta^2 x \bar{w}^{(4)}_x + O(\Delta^3 x) + O(\Delta^2 \tau)
+$$
+where the $\bar{w}$ denote $w_{i+1,j}$.\\
+Then we use Taylor expansion to substitute $\bar{w}$ as following:
+
+$$
+w(i+1,j)_{xx} = w(i, j)_{xx} + \Delta \tau w(i, j)_{xx, \tau} + O(\Delta^2 \tau)
+$$
+
+$$
+w(i+1,j)_{t} = w(i, j)_t + \Delta \tau w(i, j)_{tt, \tau} + O(\Delta^2 \tau)
+$$
+Thus as $(\Delta t , \Delta x) \rightarrow 0, P\phi - P_{\Delta \tau, \Delta x}\phi =  \frac{1}{2}\Delta \tau (w_{\tau \tau}-\bar{w}_{\tau \tau}) + \frac{1}{12}\Delta^2 x (w^{(4)}_x+\bar{w}^{(4)}_x) - \Delta t w_{xx,t}+ O(\Delta^3 x) + O(\Delta^2 \tau)\rightarrow 0$\\\\
+Thus this scheme is consistent.\\
+\textbf{Stability and Convergence Analysis}\\\\
+\textbf{Matrix Norm} we define matrix as 
+\begin{itemize}
+\item $\left \| A \right \|_1 = \max_{1 \leq j \leq n}\sum_{i = 1}^n |a_{ij}|$ (column sum)
+\item $\left \| A \right \|_2 = \sqrt{\rho(A^T A)}$, where $\rho$ is the spectral radius.
+\item $\left \| A \right \|_{\infty} = \max_{1 \leq j \leq n}\sum_{j = 1}^{n} |a_{ij}|$ (row sum)
+\end{itemize}
+then if $B$ is a symmetric matrix $\left \| B \right \|_2 = \sqrt{\rho(B^T B)}$ , $\left \| B \right \|_{RMS} = \left \| B \right \|_2$ , where $\left \| \cdot \right \|_2 = \sqrt{\frac{1}{M}{\left \| \cdot \right \|}^2} $ for vector.\\
+In the infinity norm and in RMS norm we have the local error : 
+\begin{center}
+$\left \| \delta_{exp}^n \right \| = O(\Delta \tau+\Delta^2 x)$ , $ \left \| \delta_{imp}^n \right \| = O(\Delta \tau+\Delta^2 x)$ , $\left \| \delta_{CN}^n \right \| = O(\Delta^2 \tau+\Delta^2 x)$
+\end{center}
+Root-Mean-Square value is $rms(x) = \sqrt{\frac{x_1^2 + x_2^2 + \cdots + x_n^2}{n}} = \frac{\left \| x \right \|_2}{\sqrt{n}}$\\
+For explicit method, we denote matrix $A = \lambda \cdot TriDiag(1,-2,1)$ and $I$ is an unity matrix, thus we write the explicit method as following:
+$$
+P_{\Delta \tau, \Delta x}\phi = (I - \lambda A)w^{(i)} = w^{(i+1)}
+$$
+We denote the exact solution here as $y$. So we know
+$$
+y - w^{(i+1)} = \varepsilon^{(i+1)} = (I - \lambda A)\varepsilon^{(i)} + O(\Delta \tau +\Delta^2 x) 
+$$
+where $\varepsilon$ is an error in the scheme, and an error at $t = 0$ can be seen as the same as $t = N$ as $\varepsilon^{(N)} = (1 - \lambda A)\varepsilon^{(0)}$.	And in sup-norm
+$$
+\left \| I - \lambda A \right \|_{\infty} = \max_{1 \leq j \leq M}(\sum_{j=1}^{M}|1 - \lambda a_{ij}|) \leq |1+\lambda| + |1 - 2\lambda| + |1 + \lambda| \leq 1 
+$$if $\lambda \leq \frac{1}{2}$,\\
+then we can obtain 
+$$
+\left \| \varepsilon^{(N)} \right \| \leq \left \| \varepsilon^{(0)} \right \| + O(\Delta \tau +\Delta^2 x)
+$$
+which means the error will be smaller and smaller (not grow).\\
+So explicit method is stable in sup-norm when $\lambda \leq \frac{1}{2}$, and convergent into $O(\Delta \tau +\Delta^2 x)$.\\
+Let us consider it now in 2-norm:\\
+$I - \lambda A$ is a symmetric matrix, so $\rho(I - \lambda A) = \left \| I - \lambda A \right \|_2 = 4\sin^2(\frac{m\pi \Delta x}{2})$ 
+Now we let $|1 - \lambda A| < 1$, i.e.
+
+$$
+\left\{\begin{matrix}
+1 - 4\lambda < 1\\ 
+
+-1 < 1- 4\lambda \end{matrix}\right. \Rightarrow \left\{\begin{matrix}
+\lambda \geq  0\\ 
+
+\lambda \leq \frac{1}{2}\end{matrix}\right. 
+$$
+and we know $\lambda \neq 0$, so $0 < \lambda \leq \frac{1}{2}$, which means when $0 < \lambda \leq \frac{1}{2}$, the scheme is stable.\\
+Now consider the stability and convergence in implicit method:\\
+With the same approach as explicit method, we can get:
+$$
+(I + \lambda A)\varepsilon^{(N+1)} = \varepsilon^{(N)} \Rightarrow \varepsilon^{(N+1)} = (I+ \lambda A)^{-1} \varepsilon^{(N)}
+$$
+Then we divide $A$ into two parts, i.e.
+$$
+M = \begin{bmatrix}
+1+2\lambda & 0&  &  & \\ 
+0 &  
+1+2\lambda& \ddots  &  & \\ 
+ & \ddots  &  
+\ddots & \ddots  & \\ 
+ &  & \ddots  &  \ddots &0 \\ 
+ &  &  & 0 & 
+1+2\lambda
+\end{bmatrix}
+$$
+and
+$$
+\lambda S =\begin{bmatrix}
+0& -\lambda&  &  & \\ 
+-\lambda &  
+0& \ddots  &  & \\ 
+ & \ddots  &  
+\ddots & \ddots  & \\ 
+ &  & \ddots  &  \ddots & -\lambda \\ 
+ &  &  & -\lambda & 
+0
+\end{bmatrix}
+$$
+where $S = TriDiag(-1, 0, -1)$.\\
+Then we have 
+\begin{itemize}
+\item $(1+ 2\lambda) |\varepsilon^{(N+1)}| \leq \lambda S |\varepsilon^{(N+1)}|+ |\varepsilon^{(N)}|$ , where $\left \| S \right \|_{\infty} = 2$
+\item $(1+ 2\lambda) \left \| \varepsilon^{(N+1)}\right \|_{\infty} \leq 2\lambda  \left \| \varepsilon^{(N+1)}\right \|_{\infty} + \left \|\varepsilon^{(N)}\right \|_{\infty} \Rightarrow \left \|\varepsilon^{(N+1)}\right \|_{\infty} \leq \left \|\varepsilon^{(N)}\right \|_{\infty}$ for all $\lambda > 0$ 
+\end{itemize}
+which means for an arbitrary $\lambda$, implicit method will be stable.\\
+Now we consider it in 2-norm, let the global error $z^n_j = u^n_j - (u^*)^n_j$ ,where $z^n = (  z^n_1, \cdots, z^n_M)^T$\\
+Since this scheme is stable, so we have 
+$$
+Bz^{n+1} = z^n - k\delta_{imp}^{n+1} \Rightarrow z^n = (B^{-1}z^0) - k\sum_{i =1}^n (B^{-1})^i\delta_{imp}^{n+1-i}
+$$
+where $B^{-1} = (I + \lambda \tilde{A})$ and
+$$
+\tilde{A} =\begin{bmatrix}
+2& -1&  &  & \\ 
+-1 &  
+2& \ddots  &  & \\ 
+ & \ddots  &  
+\ddots & \ddots  & \\ 
+ &  & \ddots  &  \ddots & -1 \\ 
+ &  &  & -1 & 
+2
+\end{bmatrix}
+, 
+B = \begin{bmatrix}
+1+2\lambda& 1 - \lambda&  &  & \\ 
+1- \lambda &  
+1+2\lambda& \ddots  &  & \\ 
+ & \ddots  &  
+\ddots & \ddots  & \\ 
+ &  & \ddots  &  \ddots & 1- \lambda \\ 
+ &  &  & 1- \lambda & 
+1+2\lambda
+\end{bmatrix}
+$$
+Since B is symmetric, $\left \| B^{-1} \right \|_2 = \rho (B^{-1}) \leq 1$. And we see 
+$$
+\left \| z^{n} \right \|_2 \leq \left \| z^{0} \right \|_2 + k\sum_{i=1}^n \left \| \delta^{n+1-i} \right \|_2 \leq \left \| z^{0} \right \|_2 + nkC\sqrt{M(\Delta \tau + \Delta^2 x)^2} $$
+$$\leq \left \| z^{0} \right \|_2 + 	CT \frac{\Delta \tau + \Delta^2 x}{\sqrt{\Delta x}} =  \left \| z^{0} \right \|_2 + CT(\lambda + 1 )\Delta^{3/2} x $$
+where $M = 1/h , nk = T$, and
+$$
+\left \| z \right \|_{RMS} = \sqrt{\frac{\left \| z \right \|_2}{M}} 
+$$
+then 
+$$
+\left \| z^n \right \|_{RMS} \leq \left \| z^0 \right \|_{RMS} + CT(\Delta \tau + \Delta^2 x) 
+$$
+which shows the implicit method convergent into $ O(\Delta \tau + \Delta^2 x)$.\\
+Now consider Crank-Nicolson Method:\\
+We use the similar approach as above, we would have:
+$$
+(1+ \lambda)\varepsilon^{n+1}_j - \frac{1}{2} \lambda(\varepsilon^{n+1}_{j-1}+\varepsilon^{n+1}_{j+1}) =\frac{1}{2} \lambda(\varepsilon^{n}_{j-1}+\varepsilon^{n}_{j+1})+(1-\lambda)\varepsilon^{n}_j$$
+$$
+(1+\lambda)\left \| \varepsilon^{n+1}_j \right \|_{\infty} \leq \lambda\left \| \varepsilon^{n+1} \right \|_{\infty} + \left \| \varepsilon^{n} \right \|_{\infty}
+$$
+$$
+\Rightarrow \left \| \varepsilon^{n+1} \right \|_{\infty} \leq \left \| \varepsilon^{n} \right \|_{\infty} 
+$$
+for $\lambda \leq \frac{1}{2}$, and similarly we can get:
+$$
+\left \| z^n \right \|_{RMS} \leq \left \| z^0 \right \|_{RMS} + CT(\Delta^2 \tau + \Delta^2 x) 
+$$
+so it is convergent into $O(\Delta^2 \tau+ \Delta^2 x)$.\\
+\textbf{Error Analysis}
+After solving the PDE on Julia, we have the error results as following:
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{|l|l|l|l|l|l|l|l|l|l|}
+    \hline
+        M & N & Exact  & FDM & Error \\ \hline
+        1200.0 & 200.0 & 2.88804 & 2.88467 & 0.00336847  \\ \hline
+        900.0 & 150.0 & 2.88804 & 2.87393 & 0.0141124 \\ \hline
+        600.0 & 100.0 & 2.88804 & 2.85252 & 0.0355208 \\ \hline
+        100.0 & 50 & 2.88804 & 2.68892 & 0.199124 \\ \hline
+    \end{tabular}
+\end{table}
+
+
+
+
+\subsection{Finite-Element Method (FEM)}%2.1
+In this section we introduce the Finite-Element Method (FEM) for option pricing. In comparison to the FDM, the FEM can be used for an irregular domain, especially for multi-factor options (multidimensional space). Moreover, lower smoothness of an exact solution is allowed in the FEM method. It can be shown that the FDM appears as a special case of the FEM.\\\\
+\textbf{Weighted Residuals}
+
+In one dimensional case, a discretion is either presented by discrete grid points a = $x_0 < x_1 < ... < x_{N-1} < x_N = b$, or by a set of sub-intervals $D_k = [x_{k-1},x_k]$ with $\bigcup_{k=1}^{N}D_k = [a,b]$. The approximation of the exact solution $u(x)$ can be computed
+
+\begin{enumerate}[(a)]
+	\item FDM: discrete values: $u_i = u(x_i)$
+	\item FEM: piecewise defined function $p(x)$ on $D_k$
+\end{enumerate}
+\textbf{Principle of weighted residuals}
+
+Problem : $Lu = f$, where $u :D \rightarrow \mathbb{R}$ is the exact solution, $L$: differential operator and $f: D \rightarrow \mathbb{R}$ is given.\\\\
+\textbf{Example of operator $L$ :}
+\begin{enumerate}[$(i)$]
+\item $ n = 1 : Lu = -u''$ for $u(x)$
+\item $ n = 2 : Lu = -u_{xx}- u_{yy}$ for $u(x,y)$
+\end{enumerate}
+The piecewise approach starts with a partition of the domain $D$ into sub-domains $D_k$ such that
+\begin{enumerate}[$(i)$]
+\item $\bar{D} = \bigcup_k \bar{D}_k$
+\item $ int(D_j) \bigcap int(D_k) = \varnothing $ for $j \neq k$
+\end{enumerate}
+\textbf{Finite element}:  
+A finite element is a pair $(D_k, \Pi_K)$ consisting of 
+\begin{enumerate}[$(i)$]
+\item a polyhedron $D_k \subset \mathbb{R}^n$
+\item a linear space $ \Pi \subset C^0(D_k)$ of a finite dimension
+\end{enumerate}
+Choose basis functions (called also trial functions, shape function)$\varphi_1, ... , \varphi_n(\varphi_i : D \rightarrow \mathbb{R})$. We define the ansatz for approximation $w$ of $u$ as 
+$$
+(u \approx) w = \sum_{i=1}^{N}c_i \varphi_i$$ with 
+$ c_1, ... , c_N \in \mathbb{R}$
+$$
+w \in span\left \{\varphi_1, ... , \varphi_N  \right \}
+$$
+Our aim is to find $c_1,...,c_N$ such that $w \approx u$. For example, we determine $c_1,...,c_N$ such that residual function $R := Lw-f$ becomes small in some case. We choose test functions (weighting functions) $\psi_1, ... , \psi_N (\psi:D \rightarrow \mathbb{R})$ and requires that (Method of Weighted Residuals)
+$$
+\int_{D}R\psi_jdx = 0; j = 1,...,N
+$$
+This can also be interpreted alternatively using the bilinear form $(f,g) = \int_D fgdx$, which implies $(R, \psi_j) = 0, j = 1, ... , N$, i.e.,R is orthogonal to $\psi_j$. With $R = Lw - f$ we calculate
+$$
+(Lw - f, \psi_j) = 0 \Leftrightarrow (Lw,\psi_j) = (f, \psi_j); j = 1,...,N
+$$
+
+$$
+\Rightarrow \int_D Lw\psi_jdx = \int_D f\psi_jdx
+$$
+
+$$
+\Rightarrow \int_d(\sum_{i=1}^N c_iL\psi_i) \approx \int_D Lw\psi_jdx = \int_Df\psi_jdx
+$$
+$\Rightarrow Ac = b$ with $c = (c_1, \cdots, c_N)^T$. Note that basis functions and test functions have to be chosen such that $det(A) \neq 0$.\\
+There a few weighting functions, here we only introduce Galerkin Method.\\
+\textbf{Galerkin Method}\\
+Choose $\psi_j := \varphi_j(j = 1, \cdots, N) \Rightarrow a_{i,j} = \int_D L\varphi_i \varphi_j dx$. If $L$ is self-adjoint, i.e. $(Lf,g) = (f, Lg) \Rightarrow \int_D L\phi_i\phi_j dx = \int_D \phi_i L \phi_j dx$ and $A$ is symmetric. Additional properties of $L \Rightarrow $ positive definite matrix$A$.\\
+\textbf{MOL with FEM}
+We start with considering our heat equation here with homogeneous Dirichlet boundary condition. Then for any $v \in H^1_0$ we have
+$$
+\int_0^1 \frac{\partial u}{\partial t}v dx = \int_0^1 \frac{\partial^2 u}{\partial x^2}v dx = u_x v|^1_0 - \int^1_0 u_x v_x dx = -\int^1_0 u_x v_x dx
+= -a(u,v)
+$$
+
+where $a(u,v)$ is the bilinear form associated with the elliptic operator $\frac{\partial^2}{\partial x^2}$ in space. Here the equation above is the weak formulation for the heat equation, where we look for $u \in H^1_0$ such that the equation is satisfied for all $v\in H^1_0$.\\
+With $h = 1/(M+1)$ and $x_j = jh$, for $j = 0, ... , M+1$ we consider the piecewise linear basis functions  $\phi_j$, $j = 0, ... ,M$, the $\phi_j$ form a basis of an M-dimensional subspace in $H^1_0$.\\
+We approximate $u(x,t)$ by $u_h(x,t) = \sum_{j=1}^M u_j(t)\phi_j(x)$, with time-dependent coefficients $u_j$. The $u_j(t)$ correspond with the $U_j(t)$ of the FDM. Taking $v = \phi_i$, as in the Ritz-Galerkin approach, we derive an ODE for the $u_j(t)$.\\
+We obtain the equations
+\begin{center}
+$
+\sum^M_{j=1}u'_j(t)\left \langle \phi_j,\phi_i \right \rangle_{L^2(\Omega)} = -\sum_{j=1}^M u_j(t)a(\phi_j,\phi_i)
+$. for $i = 1, ... , M$.
+\end{center}
+with the bilinear form $a$ and $\left \langle \phi_j,\phi_i \right \rangle_{L^2(\Omega)} = \int^0_1 \phi_j \phi_i dx$. It is an implicit system of ODEs
+$$
+Mu'(t) = Bu(t)
+$$
+
+$$
+u(t) = (u_1(t),...,u_M(t))^T
+$$
+
+$$
+M = (m_{ij}), m_{ij} = \left \langle \phi_j,\phi_i \right \rangle_{L^2(\Omega)} = \left \langle \phi_i,\phi_j \right \rangle_{L^2(\Omega)}
+$$
+
+$$
+B = (b_{ij}), b_{ij} = -a(\phi_j,\phi_i) = -a(\phi_i,\phi_j) 
+$$
+
+The (constant) matrices $M$ and $B$ are symmetric. Moreover, $M$ is positive definite and thus regular. The matrix $B$ is negative definite. Using piece-wise linear basis function as above one finds that $B = -\frac{1}{h}TriDiag(-1,2,-1) = -hA$
+Similar as for MOL, standard methods for systems of ODEs can be used  to solve initial value problems.\\
+When $u(0,t) = \alpha(t)$ and $u(1,t)=\beta(t)$, with $\alpha,\beta \in C^1$, we can write $u_b(x,t) = [\beta(t) - \alpha(t)]x + \alpha(t)$ and we express $u(x,t) = w(x,t)+u_b(x,t)$, where $w(0,t) = w(1,t) = 0$. We develop $w$ in the basis functions: $w_h(x,t) = \sum_{j=1}^M w_j(t)\phi_j(t)$. Then one approximates $u$ by $\sum_{j=1}^M w_j(t)\phi_j(t) + u_b(t)$, which we enter in the bilinear form $-a(u,v)$. We obtain the system of ODEs
+$$
+Mw'(t) + b(t) = Bw(t) - c(t)
+$$
+$$
+w(t) = (w_1(t), ... ,w_M(t))^T
+$$
+with $M$ and $B$ as in the equation. The vectors $b(t)$ and $c(t)$ come from $u_b(x,t)$
+
+$$
+b(t) = (b_1,...,b_M)^T
+$$
+
+$$
+b_i = \int_0^1 \frac{\partial u_b}{\partial t}(x,t)\phi_i(x,t)dx, i = 1,...,M,
+$$
+
+$$
+=[\beta'(t)-\alpha'(t)]\int_0^1 x\phi_i(x,t)dx + \alpha'(t)\int_0^1 \phi_i(x)dx
+$$
+
+$$
+c(t) = (c_1,...,c_M)^T
+$$
+
+$$
+c_i = -[\beta (t)-\alpha(t)]\int_0^1(\phi_i)_x(x)dx, i =1,...,M
+$$
+
+Denote that the term $c(t)$ formally show up in the weak formulation. It does not when dealing with FDM. However, each $c_i = 0$, also on a non-equidistant discretion. Numerically this may not happen exactly: hence best is to completely ignore $c$.
+The system can be integrated by the Crank-Nicolson Method(Trapezoidal Rule)
+$$
+[M+\frac{k}{2}B]w^{n+1} = [M-\frac{k}{2}B]w^n  - \frac{k}{2}(b^{n+1}+b^n),
+$$
+where $w^m = w(t_m)$, $b^m =$, for $m = n, n+1$. Denote that we ignored the c's.\\
+At $t=0$ the initial value $w_j(0)$ can be derived by the either requiring that at $x= x_j$
+$$
+w_j(0) + u_b(0,x_j) = u(x_j) j =1,...,M,
+$$
+or by requiring that
+$$
+(\sum_{j=1}^M w_j(0)\phi(\cdot)+u_b(\cdot,0)-u_0(\cdot))\perp \phi_i(\cdot), i = 1, ..., M
+$$
+and solve the system for the $w_j(0)$.\\
+\textbf{Error Analysis}
+After solving the PDE on Julia, we have the error results as following:
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{|l|l|l|l|l|l|l|l|l|l|}
+    \hline
+        M & N & Exact  & FEM & Error \\ \hline
+        5000.0 & 10.0 & 2.88804 & 2.888 & 0.000131911  \\ \hline
+        2000.0 & 10.0 & 2.88804 & 2.88012 & 0.00792321 \\ \hline
+        1000.0 & 10.0 & 2.88804 & 2.87428 & 0.0137681 \\ \hline
+        500.0 & 10.0 & 2.88804 & 2.86261 & 0.0254282  \\ \hline
+    \end{tabular}
+\end{table}
+
+
+
+
+
+
+ 
+\subsection{Finite Volume Method}
+\textbf{Boundary Condition}\\
+Let $V$ denote the value of a European call or put option and let $x$ denote the price of the underlying asset. It is known that $V$ satisfies the following Black-Scholes equation:
+
+$$LV:=\frac{\partial V}{\partial t} + \frac{1}{2}\sigma^2x^2\frac{\partial^2 V}{\partial x^2} + rx\frac{\partial V}{\partial x} - rV = 0, \quad x\geq0,\quad t \in [0, T],$$
+for $x \in I, t \in [0, T)$, with the boundary and final(or a pay- off) conditions
+
+$$V(0,t) = g_1(t)\space\space\space\space\space\space ,t \in [0,T),$$
+$$V(X,t) = g_2(t)\space\space\space\space\space\space ,t \in [0,T),$$
+$$V(x,T) = g_3(x)\space\space\space\space\space\space ,x \in \bar{I},$$
+where $I$ = $(0,X)\in \mathbb{R}, \sigma > 0$ denotes the volatility of the asset, $T > 0 $ the expiry data, r the interest rate. We assume that these given functions $g_1, g_2$ and $g_3$ defining the above boundary and final conditions satisfy the following compatibility conditions:
+\begin{center}
+$g_3(0) = g_1(T)$ and $  g_3(X) = g_2(T)$
+\end{center}
+The simplest way to determine the boundary conditions for call options is to choose $V(0,t) = 0$ and $V(X,t) = V(X,T)$. We may also calculate the present value of an amount received at time $T$.\\
+$$V(0,t)=0,$$
+$$V(X,t)=X-E\exp\left(\int_{t}^{T} r(\tau)d\tau\right),$$
+In order to have the homogeneous Dirichlet boundary conditions, we add $f(x)=-LV_0$ to both sides of the BS-equation and define a new variable $u = V - V_0,$ where
+$$V_0(x,t)=g_1(t) + \frac{g_2(t) - g_1(t)}{X}x$$
+and L is the differential operator. The resulting problem can be written in the following self-ajoint form:
+$$\frac{\partial u}{\partial t}- \frac{\partial}{\partial x}(ax^2\frac{\partial u}{\partial x}+bxu) + cu= f(x,t),$$
+where
+$$a = \frac{1}{2} \sigma^2$$
+$$b = r - \sigma^2$$
+$$c = 2r - \sigma^2$$
+where the boundary and final conditions now become
+$$u(0,t) = 0 = u(X,t), t\in [0,T)$$
+$$u(x,T) = g_3(x) - V_0(x,T), x\in \bar{I}$$\\
+\textbf{Model define}\\
+Let the interval $I = (0, X) $ be divided into $N$ sub-intervals
+$$
+I_i := (x_{i}, x_{i+1}), i= 0, 1, \cdots, N-1
+$$
+with $0 = x_0 < x_1 < \cdots < x_N = X$. For each $i = 0, 1, \cdots, N-1$, we put $h_i = x_{i+1} - x_i$ and $h = \max_{0 \leq i \leq N-1}h_i$. We also let $x_{i-1/2} = (x_{i-1}+ x_i)/2$ and $x_{i+1/2} = (x_i + x_{i+1})/2$ for each $i = 1, 2, \cdots, N -1$. These mid-points form a second partition of $(0,X)$ if we define $x_{-1/2} = x_0$ and $x_{N+1/2} = x_N$. Integrating both sides of the equation over $(x_{i-1/2}, x_{i+1/2})$ we have
+$$
+-\int_{x_{i-1/2}}^{x_{i+1/2}} \frac{\partial u}{\partial t}dx -\left [ x({ax\frac {\partial u}{\partial x}+ bu)} \right ]_{x_{i-1/2}}^{x_{i+1/2}} + \int_{x_{i-1/2}}^{x_{i+1/2}}cudx = \int_{x_{i-1/2}}^{x_{i+1/2}}fdx
+$$
+for $i = 1, 2, \cdots, N-1$. Applying the mid-point quadrature rule to the first, third and last terms we obtain from the above
+$$
+-\frac{\partial u_i}{\partial t}l_i - [x_{i+1/2}\rho(u)|_{x_{i+1/2}}- x_{i-1/2}\rho(u)|_{x_{i-1/2}}]+cu_il_i = f_il_i
+$$
+for $i = 1, 2, \cdots, N-1$, where $l_i = x_{i+1/2} - x_{i-1/2},  f_i = f(x_i, t), u_i$ denotes the nodal approximation to $u_{x_i,t} $ to be determined and $\rho(u)$ is the flux associated with $u$ defined by
+$$
+\rho(u) := ax\frac{\partial u}{\partial x}+bu
+$$
+
+Clearly, we now need to derive approximations of the continuous flux $\rho(u)$ defined above at the mid-point, $x_{i+1/2}$ of the interval $I_i$ for all $i = 0, 1, \cdots, N-1$. This discussion is divided into two cases for $i \leq 1$ and $i = 0$, respectively.\\
+\textbf{Case.I} Approximation of $\rho$ at $x_{i+1/2}$ for $i \geq 1$
+
+Let us consider the following two-point boundary value problem:
+$$
+(axv' + bv)' = 0 , x \in I_i
+$$
+
+$$
+v(x_i) = u_i, v(x_{i+1}) = u_{i+1}
+$$
+And the integration yields the first-order linear equation
+$$
+\rho_i(v) := axv' +bv = C_1
+$$
+where $C_1$ denotes an additive constant. The integrating factor of this linear equation is $\mu = x^{b/a}$ and the analytic solution to it is:
+$$ v = x^{-b/a}(\int  x^{b/a} \frac{C_1}{ax}dx + C_2) = \frac{C_1}{b}+C_2 x^{-b/a}
+$$
+where $C_2$ is also an addictive constant. Note that in this deduction we assume that $b \neq 0$. But as will be seen below, this restriction can be lifted as it is the limiting case of the above when $b \rightarrow 0$. Applying the boundary conditions we obtain
+\begin{center}
+$u_i = \frac{C_1}{b_{i+1/2}} + C_2 x_i^{-\alpha}$, and $u_{i+1} = \frac{C_1}{b}+ C_2 x_{i+1}^{-\alpha}$,
+\end{center}
+where $\alpha = b/a$. Solving this linear system gives
+$$
+\rho_i(u) = C_1 = b\frac{x_{i+1}^{\alpha}u_{i+1}- x_{i}^{\alpha}u_{i}}{x_{i+1}^{\alpha} - x_{i}^{\alpha}}
+$$
+This gives a representation for the flux on the right-hand side. Note that$\rho_i(u)$ also holds when $\alpha \rightarrow 0$. This is because
+\begin{equation}
+\lim_{\alpha \rightarrow 0} \frac{x_{i+1}^{\alpha_i} - x_{i}^{\alpha}}{b} = \frac{1}{a}\lim_{\alpha \rightarrow 0} \frac{x_{i+1}^{\alpha} - x_{i}^{\alpha}}{\alpha_i} = \frac{1}{a}(lnx_{i+1} - lnx_i) > 0
+\end{equation}
+since $x_i < x_{i+1}$ and $a > 0$. Obviously, $\rho_i(u)$ provides an approximation to the flux $\rho(u)$ at $x_{i+1/2}$.\\
+\textbf{Case II.} Approximation of $\rho$ at $x_{1/2}$\\
+
+Note that the analysis in Case I does not apply to the approximation of the flux on $(0, x_1)$. So we re-consider $(axv' + bv)' = 0 , x \in I_i$ with an extra degree of freedom in the following form:
+$$
+(axv' + bv)' = C_2, in (0,x_1)
+$$
+$$
+v(0) = u_0, v(x_1) = u_1
+$$
+where $C_2$ is an unknown constant to be determined. Integrating $(axv' + bv)' = C_2$ once we have
+$$
+axv' + bv  = C_2 x + C_3 
+$$
+Using the condition $v(0) = u_0$ we have $C_3 = bu_0$, and so the above equation becomes
+$$
+\rho_0(u) := axv' + bv = bu_0 + C_2x
+$$
+Solving this problem analytically gives
+$$
+v = \left\{\begin{matrix}
+u_0 + \frac{C_2x}{a+b}+C_4x^{\alpha}, \alpha \neq -1\\ 
+u_0 + \frac{C_2}{a}xlnx+C_4x, \alpha_0= -1\end{matrix}\right.
+$$
+where $\alpha_0 = b_{1/2}/a$ as defined before and $C_4$ is an additive constant (depending on t).
+
+To determine the constants $C_2$ and $C_4$, we first consider the case when $\alpha \neq -1$. When $\alpha \geq 0 , v(0) = u_0 $ implies that $C_4 = 0$. If $\alpha< 0, C_4$ is arbitrary, so we also choose $C_4 = 0$. Using $v(x_1) = u_1$ then we obtain $C_2 = \frac{1}{x_1}(a + b)(u_1 - u_0)$.
+
+when $\alpha = -1$, and we see that $v(0) = u_0$ is satisfied for any $C_2$ and $C_4$. Therefore, solutions with such $C_2$ and $C_4$ are not unique. We choose $C_2 = 0$, and $v(x_1) = u_1$ gives $C_4 = (u_1 - u_0)/x_1$. Therefore, we have
+$$
+\rho_0(u) = (axv'+bv)_{x_{1/2}} = \frac{1}{2}[(a+b)u_1 - (a - b)u_0]
+$$
+for both $\alpha_0 = -1$ and $\alpha_0 \neq -1$. Furthermore,
+$$
+v = u_0 + (u_1 - u_0)x/x_1, x \in [0,x_1]
+$$
+
+Now with the $\rho_i(u)$ and $\rho_0(u)$ we get in Case I and Case II, we define a global piecewise constant approximation to $\rho(u)$ by $\rho_h(u)$ satisfying 
+\begin{center}
+$\rho_h(u) = \rho_i(u)$ if $x \in I_i$
+\end{center}
+for $i = 0,1, \cdots, N-1$.\\
+
+After submitting the $\rho_i(u)$ and $\rho_0(u)$, depending on the value of $i$, and then we can obtain:
+$$
+\frac{\partial u_i}{\partial t}l_i + e_{i,i-1}u_{i-1} + e_{i,i}u_i +e_{i,i+1}u_{i+1} = f_il_i
+$$
+where
+\begin{equation}
+e_{1,0} = -\frac{x_1}{4}(a-b)
+\end{equation}
+
+\begin{equation}
+e_{1,1} = \frac{x_1}{4}(a+b) + \frac{bx_{1+1/2}x_1^{\alpha}}{x_2^{\alpha}-x_1^{\alpha}} + c l_1
+\end{equation}
+
+\begin{equation}
+e_{1,2} = - \frac{bx_{1+1/2}x_1^{\alpha}}{x_2^{\alpha}-x_1^{\alpha}}
+\end{equation}
+
+and 
+
+\begin{equation}
+e_{i,i-1} = - \frac{bx_{i-1/2}x_{i-1}^{\alpha}}{x_{i}^{\alpha}-x_{i-1}^{\alpha}}
+\end{equation}
+
+\begin{equation}
+e_{i,i} =  \frac{b x_{i-1/2}x_{i}^{\alpha}}{x_{i}^{\alpha}-x_{i-1}^{\alpha}} + \frac{b x_{i+1/2}x_{i}^{\alpha}}{x_{i+1}^{\alpha}-x_{i}^{\alpha}} + cl_i
+\end{equation}
+
+\begin{equation}
+e_{i,i+1} = \frac{bx_{i+1/2}x_{i+1}^{\alpha}}{x_{i+1}^{\alpha}-x_{i}^{\alpha}}
+\end{equation}
+
+for $i = 2,3,\cdots,N-1$. These form an $(N-1)\times(N-1)$ linear system for $u := (u_1(t), \cdots, u_N(t))^T$ with $u_0(t)$ and $u_N(t)$ being equal to the given homogeneous boundary conditions.
+
+We now discuss the time discretion of the linear ODE system. Let $E_i, i = 1, 2, \cdots, N-1$, be $1\times N-1$ row vectors defined by 
+$$
+E_1 = (e_{11}(t), e_{12}(t),0,\cdots,0),
+$$
+$$
+E_i = (0,\cdots,0,e_{i,i-1}(t), e_{i,i}(t),e_{i,i+1}(t),0,\cdots,0) i = 2,3,\cdots, N-2,
+$$
+$$
+E_{N-1} = (0,\cdots,0,e_{N-1}(t), e_{N-1,N-1}(t)),
+$$
+where $e_{i,i-1}(t), e_{i,i}(t)$ and $e_{i,i+1}$ are defined above and those entries which are not defined are considered to be zero. Obviously, using$E_i$ , so we can then obtain:
+$$
+-\frac{\partial u_i(t)}{\partial t}l_i + E_i(t)u(t) = f_i(t)l_i
+$$
+for $i = 1, 2, \cdots, N-1$. This is a first-order linear ODE system. To discrete this system, we let $t_i(i = 0,1,\cdots,K)$ be a set of partition points in $[0,T]$ satisfying $T = t_0 > t_1> \cdots >t_K = 0$. Then, we apply the two-level implicit time-stepping method with a splitting parameter $\theta \in [1/2, 1]$, then we get
+$$
+\frac{u_i^{k+1}- u_i^k}{-\Delta t_k}l_i + \theta E_i^{k+1}u^{k+1} + (1-\theta)E_i^k u^k = (\theta f_i^{k+1} + (1-\theta)f_i^k)l_i)
+$$
+for $k = 0,1, \cdots, K-1$, where $\Delta t_k = t_{k+1} - t_k < 0, E_i^k = E_i(t_k), f_i^k = f(x_i, t_k)$ and $u^k$ denote the approximation fo $u$ at $t = t_k$. Let $E^k$ be the $(N-1)\times(N-1)$ matrix given by $E^k = (E_1^k, E_2^k, \cdots, E_{N-1}^k)^T$. Then, the above linear system can be rewritten as 
+\begin{equation}
+(\theta E^{k+1} + G^k)u^{k+1} = f^k + [G^k - (1 - \theta)E^k]u^k
+\end{equation}
+for $k = 0, 1, \cdots , K-1$, where $G^k = diag(l_1/(-\Delta t_k), \cdots, l_{N-1}/(-\Delta t_k))$ is an $(N-1) \times (N-1)$ diagonal matrix and $f^k =\theta(f_1^{k+1}l_1, \cdots, f_{N-1}^{k+1}l_{N-1})^T + (1-\theta)(f_1^kl_1, \cdots, f_{N-1}^kl_{N-1})^T$. When $\theta = 1/2$, the time-stepping scheme becomes Crank-Nicolson scheme and when $\theta = 1$ it is the backward Euler scheme. Both of these schemes are unconditionally stable, and they are of second- and first-order accuracy, respectively.
+
+We now show that, when $|\Delta t_k|$ is sufficiently small, then the system matrix is an M-matrix.
+
+\textit{Proof.} Let us first investigate the off-diagonal entries of $E^{k+1} $ in (5.8). From (5.2)-(5.7) we see that $e_{i,j} \leq 0$ for all $i,j = 1,2,\cdots, N-1, j \neq i$. This is because
+$$
+\frac{b}{x_{i+1}^{\alpha}-x_i^{\alpha}} = \frac{a\alpha}{x_{i+1}^{\alpha}-x_i^{\alpha}} > 0
+$$
+for all $i = 1, 2, \cdots, N-1$ and all $b \neq 0$. From (5.1) we see that this also holds when $b \rightarrow 0$. This proves that all of the off-diagonal elements of the system matrix of (5.8) are non-positive.
+
+Furthermore, using (5.2)-(5.7) and the definition of $E_i^{k+1}, i = 1, 2, \cdots, N-1$, it is easy to check that the diagonal entries of $(\theta E^{k+1} + G^k)$ are given by
+$$
+\frac{l_1}{-\Delta t_k} + \Delta e_{1,1}^{k+1} = \theta(\sum_{j=1}^{N-1}|e_{1,j}^{k+1}|) + \theta \frac{x_1}{4}(a + b) + (\theta c + \frac{1}{|\Delta t_k|})l_1
+$$
+
+$$
+\frac{l_j}{-\Delta t_k} + \theta e_{i,i}^{k+1} = \theta(\sum_{j=1}^{N-1}|e_{i,j}^{k+1}|)) + (\theta c + \frac{1}{|\Delta t_k|})l_j
+$$
+for $i = 2,3,\cdots, N-1$. Thus, when $|\Delta t_k|$ is sufficiently small, $\theta E^{k+1} + G^k$ is (strictly) diagonally dominant. Therefore, it is an M-matrix.\\
+\textbf{Error Analysis}
+After solving the PDE on Julia, we have the error results as following:
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{|l|l|l|l|l|l|l|l|l|l|}
+    \hline
+        M & N & Exact  & FVM & Error \\ \hline
+	1000.0 & 150.0 & 2.88804 & 2.89948  & 0.011435  \\ \hline
+	500.0 & 100.0 & 2.88804 &2.91295 & 0.0249105 \\ \hline
+        300.0 & 50.0 & 2.88804 & 2.84555 & 0.0424954 \\ \hline
+        200.0  & 10.0 & 2.88804 & 2.78465 & 0.103392  \\ \hline
+        
+    \end{tabular}
+\end{table}
+\begin{thebibliography}{99}
+\bibitem{ref1}RENDLEMAN, R.J., Jr. and BARTTER, B.J. (1979), Two-State Option Pricing. The Journal of Finance, 34: 1093-1110.
+\bibitem{ref2}Philip E Protter (2005). Stochastic Integration and Differential Equations, 2nd edition. Springer. ISBN 3-662-10061-4. Section 2.7.
+\bibitem{ref3} Phil Goddard (N.D.). Option Pricing – Finite Difference Methods
+\bibitem{ref4}Achdou, Yves, and Olivier Pironneau. "Finite element methods for option pricing." Université Pierre et Marie Curie (2007): 1-12.
+\bibitem{ref5}Song Wang, A novel fitted finite volume method for the Black–Scholes equation governing option pricing, IMA Journal of Numerical Analysis, Volume 24, Issue 4, October 2004, Pages 699–720,
+\end{thebibliography}
+
+
+
+
+
+
+
+%----------------------------------------------------------------------------------------
+
+\end{document}
+
